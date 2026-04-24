@@ -2,27 +2,54 @@ package com.demopanel;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 
-public class Node extends JButton implements ActionListener {
+public class Block extends JButton implements MouseListener {
 
-    Node parent;
+    Block parent;
     int col;
     int row;
+    PaintingPanel panel;
 
-    public Node(int col,int row){
+    public Block(int col, int row,PaintingPanel panel){
         this.col = col;
         this.row = row;
+        this.panel = panel;
 
         setBackground(Color.WHITE);
         setForeground(Color.BLACK);
-        addActionListener(this);
+        addMouseListener(this);
+    }
+
+    public void paint(){
+        setBackground(Color.BLUE);
     }
 
     @Override
-    public void actionPerformed(ActionEvent actionEvent) {
+    public void mouseClicked(MouseEvent mouseEvent) {
+    }
 
-        setBackground(Color.BLUE);
+    @Override
+    public void mousePressed(MouseEvent mouseEvent) {
+        panel.paintMode = true;
+        paint();
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent mouseEvent) {
+        panel.paintMode = false;
+    }
+
+    @Override
+    public void mouseEntered(MouseEvent mouseEvent) {
+        if (panel.paintMode){
+            paint();
+        }
+    }
+
+    @Override
+    public void mouseExited(MouseEvent mouseEvent) {
+
     }
 }

@@ -2,18 +2,21 @@ package com.demopanel;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseEvent;
 
-public class DemoPanel extends JPanel {
-    final int maxCol = 15;
-    final int maxRow = 10;
-    final int nodeSize = 70;
+public class PaintingPanel extends JPanel {
+    final int maxCol = 192;
+    final int maxRow = 108;
+    final int nodeSize = 10;
     final int screenWidth = nodeSize*maxCol;
     final int screenHeight = nodeSize*maxRow;
 
-    //nodes
-    Node[][] nodes = new Node[maxCol][maxRow];
+    boolean paintMode = false;
 
-    public DemoPanel(){
+    //nodes
+    Block[][] blocks = new Block[maxCol][maxRow];
+
+    public PaintingPanel(){
 
         this.setPreferredSize(new Dimension(screenWidth,screenHeight));
         this.setBackground(Color.BLACK);
@@ -23,15 +26,23 @@ public class DemoPanel extends JPanel {
         int row = 0;
 
         while(col<maxCol && row<maxRow){
-            nodes[col][row] = new Node(col,row);
-            this.add(nodes[col][row]);
+            blocks[col][row] = new Block(col,row,this);
+            this.add(blocks[col][row]);
 
             col++;
             if(col ==maxCol){
+                System.out.println(row+"/"+maxRow+"     "+col+"/"+maxCol);
                 col =0;
                 row++;
             }
         }
+
+        Toolkit.getDefaultToolkit().addAWTEventListener(e -> {
+            if (e.getID() == MouseEvent.MOUSE_RELEASED) {
+                paintMode = false;
+            }
+        },AWTEvent.MOUSE_EVENT_MASK
+        );
 
     }
 

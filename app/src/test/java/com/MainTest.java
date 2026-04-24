@@ -1,4 +1,4 @@
 package com;
 
-public class Main {
+public class MainTest {
 }
