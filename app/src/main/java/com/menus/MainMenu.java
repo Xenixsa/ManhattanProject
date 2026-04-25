@@ -10,6 +10,7 @@ public class MainMenu {
     JFrame mainMenuFrame = new JFrame();
 
     public MainMenu(){
+        long createdtime = System.nanoTime();
         JPanel menuPanel = new JPanel();
 
         JButton startbutton = new JButton();
@@ -53,6 +54,9 @@ public class MainMenu {
         demowindow.pack();
         demowindow.setLocationRelativeTo(null);
 
+        System.out.print("\nNow start button is aviable.");
+        long estimatedTime = System.nanoTime() - createdtime;
+        System.out.print("It took: "+estimatedTime/100000000+" seconds to get started.");
         startbutton.addActionListener(actionEvent -> {
             System.out.println("Start button pressed.");
             mainMenuFrame.dispose();

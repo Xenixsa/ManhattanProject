@@ -11,6 +11,7 @@ public class Block extends JButton implements MouseListener {
     int col;
     int row;
     PaintingPanel panel;
+    boolean isPainted = false;
 
     public Block(int col, int row,PaintingPanel panel){
         this.col = col;
@@ -24,6 +25,16 @@ public class Block extends JButton implements MouseListener {
 
     public void paint(){
         setBackground(Color.BLUE);
+        isPainted = true;
+    }
+
+    @Override
+    public String toString(){
+        if(this.isPainted){
+            return " 1 ";
+        }else{
+            return " 0 ";
+        }
     }
 
     @Override
