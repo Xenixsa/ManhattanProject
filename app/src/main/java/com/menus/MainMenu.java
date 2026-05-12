@@ -82,8 +82,8 @@ public class MainMenu { // klasa głównego menu aplikacji
     }
 
     private void startSimulation() { // spina razem wszystkie klasy i odpala symulację
-
-        SimulationEngine engine = new SimulationEngine(); // tworzy silnik fizyki
+        int[] grid = new int[1920*1080];
+        SimulationEngine engine = new SimulationEngine(1920,1080,grid); // tworzy silnik fizyki
         SimulationPanel simulationPanel = new SimulationPanel(1920,1080); // tworzy panel wyświetlający symulację w Full HD
 
         SimulationThread simulationThread = new SimulationThread( // tworzy wątek symulacji
