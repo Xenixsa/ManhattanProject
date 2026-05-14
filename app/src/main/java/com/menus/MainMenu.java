@@ -1,5 +1,6 @@
 package com.menus;
 
+import com.Renderer;
 import com.demopanel.PaintingPanel;
 
 // Importy klas Symulacji
@@ -14,6 +15,7 @@ import java.awt.*;
 public class MainMenu { // klasa głównego menu aplikacji
 
     JFrame mainMenuFrame = new JFrame(); // okno głównego menu
+    Renderer renderer;
 
     public MainMenu() { // konstruktor - buduje i wyświetla menu
 
@@ -82,6 +84,7 @@ public class MainMenu { // klasa głównego menu aplikacji
     }
 
     private void startSimulation() { // spina razem wszystkie klasy i odpala symulację
+
         int[] grid = new int[1920*1080];
         SimulationEngine engine = new SimulationEngine(1920,1080,grid); // tworzy silnik fizyki
         SimulationPanel simulationPanel = new SimulationPanel(1920,1080); // tworzy panel wyświetlający symulację w Full HD

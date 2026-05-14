@@ -12,6 +12,8 @@ public class SimulationEngine {
     private List<Neutron> neutrons;
     private Random random = new Random();
 
+    private List<Atom> atoms;
+
     public SimulationEngine(int width, int height, int[] grid){
         this.width = width;
         this.height = height;
