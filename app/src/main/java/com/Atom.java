@@ -1,12 +1,10 @@
 package com;
 
-public class Atom {
+public class Atom extends Particle{
 
-    private int x;
-    private int y;
     private boolean split;
 
-    public Atom(int x, int y) {
+    public Atom(double x, double y) {
 
     }
 

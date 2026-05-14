@@ -38,7 +38,7 @@ public class SimulationEngine {
             if (n.isOnBoard() == false){
                 continue;
             }
-            int index = n.getPixelY() * width * n.getPixelX();
+            int index = n.getPixelY() * width + n.getPixelX();
             if (grid[index] == 1)  {                             //trafil w atom uran
                 grid[index] = 2;
                 spawnNeutrons(n.getPixelX(), n.getPixelY());

@@ -1,8 +1,7 @@
 package com;
 
-public class Neutron {
-    private double x;
-    private double y;
+public class Neutron extends Particle {
+
     private double dx;
     private double dy;
     private boolean onBoard;
@@ -18,6 +17,9 @@ public class Neutron {
         if (x<0 || x>=width || y<0 || y>=height){
             onBoard = false;
         }
+
+        x += dx;
+        y += dy;
     }
     public int getPixelX(){
         return (int)x;
