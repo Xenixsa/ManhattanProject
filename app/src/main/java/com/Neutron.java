@@ -7,25 +7,25 @@ public class Neutron extends Particle {
     private boolean onBoard;
 
     public Neutron(double x, double y, double dx, double dy){
-        this.x = x;
-        this.y = y;
+        super(x, y);
         this.dy = dy;
         this.dx = dx;
         this.onBoard = true;
     }
     public void move(int width, int height){
-        if (x<0 || x>=width || y<0 || y>=height){
+        if (getX()<0 || getX()>=width || getY()<0 || getY()>=height){
             onBoard = false;
         }
 
-        x += dx;
-        y += dy;
+        setX(getX() + dx);
+        setY(getY() + dy);
     }
+
     public int getPixelX(){
-        return (int)x;
+        return (int)getX();
     }
     public int getPixelY(){
-        return (int)y;
+        return (int)getY();
     }
     public boolean isOnBoard(){
         return onBoard;

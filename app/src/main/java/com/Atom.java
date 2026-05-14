@@ -5,19 +5,11 @@ public class Atom extends Particle{
     private boolean split;
 
     public Atom(double x, double y) {
-
-    }
-
-    public int getX() {
-        return 0;
-    }
-
-    public int getY() {
-        return 0;
+        super(x, y);
     }
 
     public boolean isSplit() {
-        return false;
+        return split;
     }
 
     public void split() {
