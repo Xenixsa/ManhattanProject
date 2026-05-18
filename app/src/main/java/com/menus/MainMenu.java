@@ -11,104 +11,133 @@ import com.SimulationThread;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 
 public class MainMenu { // klasa głównego menu aplikacji
 
-    JFrame mainMenuFrame = new JFrame(); // okno głównego menu
-    Renderer renderer;
+    //Jedno główne okno aplikacji - nie tworzymy nowych okien
+    // tylko podmieniamy zawartość za pomocą CardLayout
+    JFrame mainMenuFrame = new JFrame();
+    CardLayout cardLayout = new CardLayout(); // przełącza widoczny panel
+    JPanel container = new JPanel(cardLayout); // kontener trzymający wszystkie karty (MENU, DRAWING, SIMULATION)
 
     public MainMenu() { // konstruktor - buduje i wyświetla menu
 
 
-        JPanel menuPanel = new JPanel(); // panel na którym leżą przyciski
+        JPanel menuPanel = new JPanel(); // panel ekranu startowego z przyciskami
+        JButton startbutton = new JButton("Start"); // otwiera panel rysowania atomów
+        JButton settingsbutton = new JButton("Settings"); // TODO: ustawienia symulacji
+        JButton exitbutton = new JButton("Exit"); // zamyka aplikację
 
-        JButton startbutton = new JButton("Start"); // przycisk otwierający panel rysowania
-        JButton settingsbutton = new JButton("Settings"); // przycisk ustawień - to zrobienia w przyszłości
-        JButton exitbutton = new JButton("Exit"); // przycisk zamykający aplikację
+        menuPanel.setBackground(Color.BLACK);
+        menuPanel.setLayout(new BoxLayout(menuPanel,BoxLayout.Y_AXIS)); // przyciski jeden pod drugim
 
-        menuPanel.setBackground(Color.BLACK); // czarne tło panelu
-        menuPanel.setLayout(new BoxLayout(menuPanel,BoxLayout.Y_AXIS)); // przyciski ułożone pionowo jeden pod drugim
-
-        startbutton.setAlignmentX(Component.CENTER_ALIGNMENT); // wyśrodkowanie przycisku Start w poziomie
-        settingsbutton.setAlignmentX(Component.CENTER_ALIGNMENT); // wyśrodkowanie przycisku Settings w poziomie
-        exitbutton.setAlignmentX(Component.CENTER_ALIGNMENT); // wyśrodkowanie przycisku Exit w poziomie
+        // CENTER_ALIGNMENT wyśrodkowuje każdy przycisk poziomo w BoxLayout
+        startbutton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        settingsbutton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        exitbutton.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         Dimension spacingBetweenButtons = new Dimension(0,10); // odstęp 10 px między przyciskami
 
-        menuPanel.add(Box.createVerticalGlue()); // elastyczna przestrzeń - pcha przyciski do środka okna
-        menuPanel.add(startbutton); // dodaje przycisk Start
-        menuPanel.add(Box.createRigidArea(spacingBetweenButtons)); // dodaje odstęp
-        menuPanel.add(settingsbutton); // dodaje przycisk Settings
-        menuPanel.add(Box.createRigidArea(spacingBetweenButtons)); // dodaje odstęp
-        menuPanel.add(exitbutton); // dodaje przycisk Exit
-        menuPanel.add(Box.createVerticalGlue()); // elastyczna przestrzeń - pcha przyciski do środka okna
+        // VerticalGlue pcha przyciski do środka okna z góry i z dołu
+        menuPanel.add(Box.createVerticalGlue());
+        menuPanel.add(startbutton);
+        menuPanel.add(Box.createRigidArea(spacingBetweenButtons));
+        menuPanel.add(settingsbutton);
+        menuPanel.add(Box.createRigidArea(spacingBetweenButtons));
+        menuPanel.add(exitbutton);
+        menuPanel.add(Box.createVerticalGlue());
 
-        mainMenuFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // zamknięcie okna kończy aplikację
-        Dimension mainMenuDimension = new Dimension(800,600); // rozmiar okna menu
-        mainMenuFrame.setSize(mainMenuDimension); // ustawia rozmiar okna
-        mainMenuFrame.setTitle("Manhattan"); // tytuł okna
-        mainMenuFrame.setLocationRelativeTo(null); // wyśrodkowanie okna na ekranie
-        mainMenuFrame.setResizable(false); // zablokowanie możliwości zmiany rozmiaru okna
+        container.add(menuPanel, "MENU"); // rejestrujemy panel menu jako pierwszą kartę
 
-        mainMenuFrame.add(menuPanel); // dodaj panel z przyciskami do okna
+        mainMenuFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        Dimension mainMenuDimension = new Dimension(800,600);
+        mainMenuFrame.setSize(mainMenuDimension);
+        mainMenuFrame.setTitle("Manhattan");
+        mainMenuFrame.setLocationRelativeTo(null); // wyśrodkowanie na ekranie - tylko raz przy starcie
+        mainMenuFrame.setResizable(false);
+        mainMenuFrame.add(container); // do okna trafia kontener, nie bezpośrednio panel
+        mainMenuFrame.setVisible(true);
 
 
-        mainMenuFrame.setVisible(true); // pokaż okno
-
-        startbutton.addActionListener(e -> openDrawing()); // kliknięcie Start otwiera panel rysowania
-        settingsbutton.addActionListener(e -> System.out.println("Settings - TODO")); // ustawienia do zaimplementowania później
-        exitbutton.addActionListener(e -> System.exit(0)); // kliknięcie Exit zamyka aplikację
+        startbutton.addActionListener(e -> openDrawing());
+        settingsbutton.addActionListener(e -> System.out.println("Settings - TODO"));
+        exitbutton.addActionListener(e -> System.exit(0));
         }
 
 
-    private void openDrawing() { // otwiera okno rysowania atomów po kliknięciu Start
+    private void openDrawing() {
 
-        JFrame drawingWindow = new JFrame("Narysuj atomy uranu"); // okno z planszą do rysowania
-        PaintingPanel paintingPanel = new PaintingPanel(); // plansza Szymona do rysowania atomów
+        // Tworzymy panel rysowania i dodajemy go jako kartę DRAWING -
+        // okno zostaje w tym samym miejscu na ekranie, zmienia się tylko zawartość
 
-        JButton launchButton = new JButton("Odpal symulację!"); // przycisk startujący symulację
-        launchButton.addActionListener(e -> {
+        PaintingPanel paintingPanel = new PaintingPanel(); // plansza Szymona do rysowania atomów uranu
 
-            drawingWindow.dispose(); // zamuka okno rysowania
-            mainMenuFrame.dispose(); // zamyka menu główne
-            startSimulation(); // odpala symulację
-        });
+        JButton launchButton = new JButton("Odpal symulację!");
+        launchButton.addActionListener(e -> startSimulation(paintingPanel); // przekazujemy planszę dalej
 
-        drawingWindow.setLayout(new BorderLayout()); // layout okna - CENTER i SOUTH
-        drawingWindow.add(paintingPanel, BorderLayout.CENTER); // plansza zajmuje środek okna
-        drawingWindow.add(launchButton, BorderLayout.SOUTH); // przycisk na dole okna
-        drawingWindow.pack(); // zamiast ręcznie ustawiać rozmiar okna, Swing sam oblicza ile miejsca potrzebuje PaintingPanel i dopasowuje okno
-        drawingWindow.setLocationRelativeTo(null); // wyśrodkowanie okna na ekranie
-        drawingWindow.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); // zamknięcie tego okna nie kończy całej aplikacji
-        drawingWindow.setVisible(true); // pokaż okno rysowania
+        JPanel drawingPanel = new JPanel(new BorderLayout());
+        drawingPanel.add(paintingPanel,BorderLayout.CENTER); // plansza wypełnia środek
+        drawingPanel.add(launchButton,BorderLayout.SOUTH); // przycisk na dole
+
+        container.add(drawingPanel,"DRAWING"); // rejestrujemy jako kartę
+        cardLayout.show(drawingPanel,"DRAWING"); // przełączamy na ekran rysowania
+        mainMenuFrame.setTitle("Narysuj atomy uranu"); // aktualizujemy tytuł okna
     }
 
-    private void startSimulation() { // spina razem wszystkie klasy i odpala symulację
 
+    private void startSimulation(PaintingPanel paintingPanel) { // spina razem wszystkie klasy i odpala symulację
+
+        // Budujemy tablicę grid[] na podstawie tego, co użytkownik narysował.
+        // Każdy blok 40x40px zaznaczony w PaintingPanel staje się atomem uranu (wartość 1) w grid[]
         int[] grid = new int[1920*1080];
-        SimulationEngine engine = new SimulationEngine(1920,1080,grid); // tworzy silnik fizyki
-        SimulationPanel simulationPanel = new SimulationPanel(1920,1080); // tworzy panel wyświetlający symulację w Full HD
 
-        SimulationThread simulationThread = new SimulationThread( // tworzy wątek symulacji
-                engine, // przekazujemy silnik - wątek będzie go co klatkę wywoływać
-                () -> simulationPanel.repaint() // lambda - mówi wątkowi jak odświeżyć ekran
+        // przepisujemy narysowane atomy z PaintingPanel do grid[]
+        for (int row = 0; row < paintingPanel.maxRow; row++) {
+            for (int col = 0; col < paintingPanel.maxCol; col++) {
+                if (paintingPanel.blocks[col][row].isPainted) {
+                    // każdy blok to 40x40 pikseli - wypełniamy wszystkie piksele bloku
+                    for (int py = 0; py < paintingPanel.nodeSize; py++) {
+                        for (int px = 0; px < paintingPanel.nodeSize; px++) {
+                            int x = col * paintingPanel.nodeSize + px;
+                            int y = row * paintingPanel.nodeSize + py;
+                            grid[y * 1920 + x] = 1; // 1 = atom uranu
+                        }
+                    }
+                }
+            }
+        }
+        SimulationEngine engine = new SimulationEngine(1920,1080,grid); // silnik fizyki
+        SimulationPanel simulationPanel = new SimulationPanel(1920,1080); // ekran symulacji
+        Renderer renderer = new Renderer(1920,1080); // zamienia grid[] na obrazek
+
+        // Lambda wywoływana co klatkę przez SimulationThread:
+        // renderuje stan silnika -> przekazuje obrazek do panelu -> odświeża ekran
+        SimulationThread simulationThread = new SimulationThread(
+                engine,
+                () -> {
+                    BufferedImage frame = renderer.render(grid, engine.getNeutrons()); // renderuje nową klatkę
+                    simulationPanel.setImage(frame); // przekazuje obrazek do panelu
+                    simulationPanel.repaint(); // mówi Swingowi, żeby odświeżył ekran
+                }
         );
 
-        JFrame simulationWindow = new JFrame("Symulacja"); // okno symulaci
-        simulationWindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); // blokujemy domyślne zamknięcie - sami obsługujemy X
-        simulationWindow.addWindowListener(new java.awt.event.WindowAdapter() { // przechwytuje naciśnięcie "X" w oknie i wtedy odpala stopSimulation() i dispose()
+        container.add(simulationPanel,"SIMULATION"); // rejestrujemy ekran symulacji jako kartę
+        cardLayout.show(simulationPanel,"SIMULATION"); // przełączamy na ekran symulacji
+        mainMenuFrame.setTitle("Symulacja"); // aktualizujemy tytuł okna
+        mainMenuFrame.setResizable(true); // pozwalamy zmieniać rozmiar podczas symulacji
+
+        // Przechwytujemy kliknięcie X - najpierw zatrzymujemy wątek,
+        // dopiero potem zamykamy okno (kolejność ma znaczenie)
+        mainMenuFrame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        mainMenuFrame.addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
-                simulationThread.stopSimulation(); // zatrzymuje symulacje
-                simulationWindow.dispose(); // zamyka symulacje
+                simulationThread.stopSimulation(); // zatrzymujemy wątek przed zamknięciem
+                mainMenuFrame.dispose();
             }
         });
 
-        simulationWindow.add(simulationPanel); // dodaj panel symulacji do okna
-        simulationWindow.pack(); // dopasuj rozmiar okna do panelu
-        simulationWindow.setLocationRelativeTo(null); // wyśrodkowanie okna na ekranie
-        simulationWindow.setVisible(true); // pokaż okno symulacji
-
-        simulationThread.start(); // odpala run() w osobnym wątku - musi być po setVisible() bo panel musi już istnieć na ekranie
+        simulationThread.start(); // startujemy wątek - musi być po show() żeby panel był już widoczny
     }
 }
