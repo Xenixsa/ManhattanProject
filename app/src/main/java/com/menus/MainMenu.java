@@ -2,9 +2,6 @@ package com.menus;
 
 import com.Renderer;
 import com.demopanel.PaintingPanel;
-
-// Importy klas Symulacji
-
 import com.SimulationEngine;
 import com.SimulationPanel;
 import com.SimulationThread;
@@ -23,21 +20,20 @@ public class MainMenu { // klasa głównego menu aplikacji
 
     public MainMenu() { // konstruktor - buduje i wyświetla menu
 
-
         JPanel menuPanel = new JPanel(); // panel ekranu startowego z przyciskami
         JButton startbutton = new JButton("Start"); // otwiera panel rysowania atomów
         JButton settingsbutton = new JButton("Settings"); // TODO: ustawienia symulacji
         JButton exitbutton = new JButton("Exit"); // zamyka aplikację
 
         menuPanel.setBackground(Color.BLACK);
-        menuPanel.setLayout(new BoxLayout(menuPanel,BoxLayout.Y_AXIS)); // przyciski jeden pod drugim
+        menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS)); // przyciski jeden pod drugim
 
         // CENTER_ALIGNMENT wyśrodkowuje każdy przycisk poziomo w BoxLayout
         startbutton.setAlignmentX(Component.CENTER_ALIGNMENT);
         settingsbutton.setAlignmentX(Component.CENTER_ALIGNMENT);
         exitbutton.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        Dimension spacingBetweenButtons = new Dimension(0,10); // odstęp 10 px między przyciskami
+        Dimension spacingBetweenButtons = new Dimension(0, 10); // odstęp 10 px między przyciskami
 
         // VerticalGlue pcha przyciski do środka okna z góry i z dołu
         menuPanel.add(Box.createVerticalGlue());
@@ -51,7 +47,7 @@ public class MainMenu { // klasa głównego menu aplikacji
         container.add(menuPanel, "MENU"); // rejestrujemy panel menu jako pierwszą kartę
 
         mainMenuFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        Dimension mainMenuDimension = new Dimension(800,600);
+        Dimension mainMenuDimension = new Dimension(800, 600);
         mainMenuFrame.setSize(mainMenuDimension);
         mainMenuFrame.setTitle("Manhattan");
         mainMenuFrame.setLocationRelativeTo(null); // wyśrodkowanie na ekranie - tylko raz przy starcie
@@ -59,38 +55,34 @@ public class MainMenu { // klasa głównego menu aplikacji
         mainMenuFrame.add(container); // do okna trafia kontener, nie bezpośrednio panel
         mainMenuFrame.setVisible(true);
 
-
         startbutton.addActionListener(e -> openDrawing());
         settingsbutton.addActionListener(e -> System.out.println("Settings - TODO"));
         exitbutton.addActionListener(e -> System.exit(0));
-        }
-
+    }
 
     private void openDrawing() {
 
         // Tworzymy panel rysowania i dodajemy go jako kartę DRAWING -
         // okno zostaje w tym samym miejscu na ekranie, zmienia się tylko zawartość
-
         PaintingPanel paintingPanel = new PaintingPanel(); // plansza Szymona do rysowania atomów uranu
 
         JButton launchButton = new JButton("Odpal symulację!");
-        launchButton.addActionListener(e -> startSimulation(paintingPanel); // przekazujemy planszę dalej
+        launchButton.addActionListener(e -> startSimulation(paintingPanel)); // przekazujemy planszę dalej
 
         JPanel drawingPanel = new JPanel(new BorderLayout());
-        drawingPanel.add(paintingPanel,BorderLayout.CENTER); // plansza wypełnia środek
-        drawingPanel.add(launchButton,BorderLayout.SOUTH); // przycisk na dole
+        drawingPanel.add(paintingPanel, BorderLayout.CENTER); // plansza wypełnia środek
+        drawingPanel.add(launchButton, BorderLayout.SOUTH);   // przycisk na dole
 
-        container.add(drawingPanel,"DRAWING"); // rejestrujemy jako kartę
-        cardLayout.show(drawingPanel,"DRAWING"); // przełączamy na ekran rysowania
+        container.add(drawingPanel, "DRAWING");        // rejestrujemy jako kartę
+        cardLayout.show(container, "DRAWING");         // przełączamy na ekran rysowania
         mainMenuFrame.setTitle("Narysuj atomy uranu"); // aktualizujemy tytuł okna
     }
-
 
     private void startSimulation(PaintingPanel paintingPanel) { // spina razem wszystkie klasy i odpala symulację
 
         // Budujemy tablicę grid[] na podstawie tego, co użytkownik narysował.
         // Każdy blok 40x40px zaznaczony w PaintingPanel staje się atomem uranu (wartość 1) w grid[]
-        int[] grid = new int[1920*1080];
+        int[] grid = new int[1920 * 1080];
 
         // przepisujemy narysowane atomy z PaintingPanel do grid[]
         for (int row = 0; row < paintingPanel.maxRow; row++) {
@@ -107,9 +99,10 @@ public class MainMenu { // klasa głównego menu aplikacji
                 }
             }
         }
-        SimulationEngine engine = new SimulationEngine(1920,1080,grid); // silnik fizyki
-        SimulationPanel simulationPanel = new SimulationPanel(1920,1080); // ekran symulacji
-        Renderer renderer = new Renderer(1920,1080); // zamienia grid[] na obrazek
+
+        SimulationEngine engine          = new SimulationEngine(1920, 1080, grid); // silnik fizyki
+        SimulationPanel  simulationPanel  = new SimulationPanel(1920, 1080);        // ekran symulacji
+        Renderer         renderer         = new Renderer(1920, 1080);               // zamienia grid[] na obrazek
 
         // Lambda wywoływana co klatkę przez SimulationThread:
         // renderuje stan silnika -> przekazuje obrazek do panelu -> odświeża ekran
@@ -122,10 +115,10 @@ public class MainMenu { // klasa głównego menu aplikacji
                 }
         );
 
-        container.add(simulationPanel,"SIMULATION"); // rejestrujemy ekran symulacji jako kartę
-        cardLayout.show(simulationPanel,"SIMULATION"); // przełączamy na ekran symulacji
-        mainMenuFrame.setTitle("Symulacja"); // aktualizujemy tytuł okna
-        mainMenuFrame.setResizable(true); // pozwalamy zmieniać rozmiar podczas symulacji
+        container.add(simulationPanel, "SIMULATION"); // rejestrujemy ekran symulacji jako kartę
+        cardLayout.show(container, "SIMULATION");     // przełączamy na ekran symulacji
+        mainMenuFrame.setTitle("Symulacja");           // aktualizujemy tytuł okna
+        mainMenuFrame.setResizable(true);              // pozwalamy zmieniać rozmiar podczas symulacji
 
         // Przechwytujemy kliknięcie X - najpierw zatrzymujemy wątek,
         // dopiero potem zamykamy okno (kolejność ma znaczenie)
