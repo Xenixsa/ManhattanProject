@@ -11,7 +11,7 @@ public class Block extends JButton implements MouseListener {
     int col;
     int row;
     PaintingPanel panel;
-    boolean isPainted = false;
+    public boolean isPainted = false;
 
     public Block(int col, int row,PaintingPanel panel){
         this.col = col;

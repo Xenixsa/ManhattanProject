@@ -56,4 +56,8 @@ public class SimulationEngine {
         }
         return true; // na razie nigdy nie kończy
     }
+
+    public List<Neutron> getNeutrons() {
+        return neutrons;
+    }
 }

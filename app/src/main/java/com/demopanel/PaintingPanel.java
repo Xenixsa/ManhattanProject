@@ -10,16 +10,16 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 public class PaintingPanel extends JPanel {
-    final int maxCol = 48;  //fullhd 48
-    final int maxRow = 25;  //       25
-    final int nodeSize = 40;
+    public final int maxCol = 48;  //fullhd 48
+    public final int maxRow = 25;  //       25
+    public final int nodeSize = 40;
     final int screenWidth = nodeSize*maxCol;
     final int screenHeight = nodeSize*maxRow;
 
     boolean paintMode = false;
 
     //nodes
-    Block[][] blocks = new Block[maxCol][maxRow];
+    public Block[][] blocks = new Block[maxCol][maxRow];
 
     public PaintingPanel(){
 
