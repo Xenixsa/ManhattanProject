@@ -1,6 +1,7 @@
 package com.menus;
 
 import com.Renderer;
+import com.demopanel.NewPaintingPanel;
 import com.demopanel.PaintingPanel;
 
 // Importy klas Symulacji
@@ -64,7 +65,7 @@ public class MainMenu { // klasa głównego menu aplikacji
     private void openDrawing() { // otwiera okno rysowania atomów po kliknięciu Start
 
         JFrame drawingWindow = new JFrame("Narysuj atomy uranu"); // okno z planszą do rysowania
-        PaintingPanel paintingPanel = new PaintingPanel(); // plansza Szymona do rysowania atomów
+        NewPaintingPanel paintingPanel = new NewPaintingPanel(); // plansza Szymona do rysowania atomów
 
         JButton launchButton = new JButton("Odpal symulację!"); // przycisk startujący symulację
         launchButton.addActionListener(e -> {
