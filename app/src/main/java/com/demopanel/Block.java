@@ -20,6 +20,8 @@ public class Block extends JButton implements MouseListener {
 
         setBackground(Color.WHITE);
         setForeground(Color.BLACK);
+        setOpaque(true); // wymusza rysowanie tła przez Swinga
+        setBorderPainted(false); // usuwa ramkę, która przykrywa tło na Maku
         addMouseListener(this);
     }
 

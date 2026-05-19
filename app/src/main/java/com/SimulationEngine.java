@@ -6,6 +6,8 @@ import java.util.Random;
 
 public class SimulationEngine {
 
+    private boolean started = false; // czy użytkownik już strzelił
+
     private int width;
     private int height;
     private int[] grid;
@@ -32,11 +34,12 @@ public class SimulationEngine {
     }
 
     public void addNeutron(double x, double y,double dx, double dy){
+        started = true; // zaznaczamy, że symulacja została zaczęta
         neutrons.add(new Neutron(x,y,dx,dy));
     }
 
     private void spawnNeutrons(int x,int y){
-        int amount = 2 + random.nextInt(2); //losuje 2 albo 3
+        int amount = 3;
         if (neutrons.size() + pendingNeutrons.size() < 10000){ //limit neutronow
         for (int i=0; i<amount; i++){
             double angle = random.nextDouble() * 2 *Math.PI;
@@ -73,6 +76,7 @@ public class SimulationEngine {
 
 
     public boolean isFinished() {
+        if (!started) return false; // symulacja nie zakończona, jeśli jeszcze nie zaczęta
         for (Neutron n : neutrons) {
             if (n.isOnBoard()) {
                 return false;

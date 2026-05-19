@@ -13,12 +13,27 @@ public class Neutron extends Particle {
         this.onBoard = true;
     }
     public void move(int width, int height){
-        if (getX()<0 || getX()>=width || getY()<0 || getY()>=height){
-            onBoard = false;
-        }
-
         setX(getX() + dx);
         setY(getY() + dy);
+
+        // odbicie od lewej i prawej ściany
+        if (getX() < 0) {
+            setX(0);
+            dx = -dx;
+        } else if (getX() >= width) {
+            setX(width - 1);
+            dx = -dx;
+        }
+
+        // odbicie od górnej i dolnej ściany
+        if (getY() < 0) {
+            setY(0);
+            dy = -dy;
+        } else if (getY() >= height) {
+            setY(height - 1);
+            dy = -dy;
+        }
+
     }
 
     public int getPixelX(){
