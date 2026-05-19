@@ -33,12 +33,22 @@ public class Renderer {
                 color = 0x000000; // czarny - puste miejsce
             }
 
-            image.setRGB(i % width, i / height, color);
+            image.setRGB(i % width, i / width, color);
         }
 
         for (Neutron n : neutrons)
             if (n.isOnBoard()) {
-                image.setRGB(n.getPixelX(), n.getPixelY(), 0xFFFFFF); // biały - neutron
+                for (int dy = -2; dy <= 2; dy++) {
+                    for (int dx = -2; dx <= 2; dx++) {
+                        int nx = n.getPixelX() + dx;
+                        int ny = n.getPixelY() + dy;
+                        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                            image.setRGB(nx, ny, 0xFFFFFF); // biały - neutron
+
+                        }
+                    }
+                }
+
             }
 
         return image;

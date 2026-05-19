@@ -73,8 +73,9 @@ public class MainMenu { // klasa głównego menu aplikacji
         drawingPanel.add(paintingPanel, BorderLayout.CENTER); // plansza wypełnia środek
         drawingPanel.add(launchButton, BorderLayout.SOUTH);   // przycisk na dole
 
-        container.add(drawingPanel, "DRAWING");        // rejestrujemy jako kartę
-        cardLayout.show(container, "DRAWING");         // przełączamy na ekran rysowania
+        container.add(drawingPanel, "DRAWING"); // rejestrujemy jako kartę
+        cardLayout.show(container, "DRAWING"); // przełączamy na ekran rysowania
+        mainMenuFrame.pack(); // rozszerza okno do rozmiaru PaintingPanel
         mainMenuFrame.setTitle("Narysuj atomy uranu"); // aktualizujemy tytuł okna
     }
 
@@ -128,6 +129,29 @@ public class MainMenu { // klasa głównego menu aplikacji
             public void windowClosing(java.awt.event.WindowEvent e) {
                 simulationThread.stopSimulation(); // zatrzymujemy wątek przed zamknięciem
                 mainMenuFrame.dispose();
+            }
+        });
+
+        // zapis współrzędnych kliknięcia
+        int[] pressCords = new int[2];
+
+        simulationPanel.addMouseListener(new java.awt.event.MouseAdapter() {
+
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e) {
+                // przeliczamy współrzędne z rozmiaru panelu na rozmiar obrazka (1920x1080)
+                pressCords[0] = (int)(e.getX() * 1920.0 / simulationPanel.getWidth());
+                pressCords[1] = (int)(e.getY()  * 1080.0 / simulationPanel.getHeight());
+            }
+
+            @Override
+            public void mouseReleased(java.awt.event.MouseEvent e) {
+                // przeliczamy gdzie puściliśmy myszkę
+                int releaseX = (int)(e.getX() * 1920.0 / simulationPanel.getWidth());
+                int releaseY = (int)(e.getY() * 1080.0 / simulationPanel.getHeight());
+
+                // strzelamy neutronem - kierunek odwrotny do przeciągnięcia jak w Angry Birds
+                engine.fireNeutron(pressCords[0], pressCords[1], releaseX, releaseY);
             }
         });
 
