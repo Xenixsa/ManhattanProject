@@ -47,12 +47,14 @@ public class MainMenu { // klasa głównego menu aplikacji
         container.add(menuPanel, "MENU"); // rejestrujemy panel menu jako pierwszą kartę
 
         mainMenuFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        Dimension mainMenuDimension = new Dimension(800, 600);
-        mainMenuFrame.setSize(mainMenuDimension);
+        //Dimension mainMenuDimension = new Dimension(800, 600);
+        //mainMenuFrame.setSize(mainMenuDimension);
         mainMenuFrame.setTitle("Manhattan");
-        mainMenuFrame.setLocationRelativeTo(null); // wyśrodkowanie na ekranie - tylko raz przy starcie
-        mainMenuFrame.setResizable(false);
+        mainMenuFrame.setResizable(true); // pozwala na zmianę rozmiaru, aby system mógł poprawnie zmaksymalizować okno
+        //mainMenuFrame.setLocationRelativeTo(null); // wyśrodkowanie na ekranie - tylko raz przy starcie
+        //mainMenuFrame.setResizable(false);
         mainMenuFrame.add(container); // do okna trafia kontener, nie bezpośrednio panel
+        mainMenuFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         mainMenuFrame.setVisible(true);
 
         startbutton.addActionListener(e -> openDrawing());
@@ -75,7 +77,7 @@ public class MainMenu { // klasa głównego menu aplikacji
 
         container.add(drawingPanel, "DRAWING"); // rejestrujemy jako kartę
         cardLayout.show(container, "DRAWING"); // przełączamy na ekran rysowania
-        mainMenuFrame.pack(); // rozszerza okno do rozmiaru PaintingPanel
+        //mainMenuFrame.pack(); // rozszerza okno do rozmiaru PaintingPanel
         mainMenuFrame.setTitle("Narysuj atomy uranu"); // aktualizujemy tytuł okna
     }
 
@@ -103,6 +105,7 @@ public class MainMenu { // klasa głównego menu aplikacji
 
         SimulationEngine engine          = new SimulationEngine(1920, 1080, grid); // silnik fizyki
         SimulationPanel  simulationPanel  = new SimulationPanel(1920, 1080);        // ekran symulacji
+        simulationPanel.setEngine(engine); // przekazanie silnika do panelu przez setter
         Renderer         renderer         = new Renderer(1920, 1080);               // zamienia grid[] na obrazek
 
         // Lambda wywoływana co klatkę przez SimulationThread:
@@ -142,16 +145,39 @@ public class MainMenu { // klasa głównego menu aplikacji
                 // przeliczamy współrzędne z rozmiaru panelu na rozmiar obrazka (1920x1080)
                 pressCords[0] = (int)(e.getX() * 1920.0 / simulationPanel.getWidth());
                 pressCords[1] = (int)(e.getY()  * 1080.0 / simulationPanel.getHeight());
+
+                // włączamy celowanie w silniku i ustawiamy początek strzałki (na pozycji kliknięcia)
+                int logX = pressCords[0];
+                int logY = pressCords[1];
+                engine.setAimState(true, logX, logY, logX, logY);
             }
 
             @Override
             public void mouseReleased(java.awt.event.MouseEvent e) {
+                // włączamy rysowanie celownika w silniku, bo gracz puścił myszkę
+                engine.setAimState(false,0, 0, 0, 0);
                 // przeliczamy gdzie puściliśmy myszkę
                 int releaseX = (int)(e.getX() * 1920.0 / simulationPanel.getWidth());
                 int releaseY = (int)(e.getY() * 1080.0 / simulationPanel.getHeight());
 
                 // strzelamy neutronem - kierunek odwrotny do przeciągnięcia jak w Angry Birds
                 engine.fireNeutron(pressCords[0], pressCords[1], releaseX, releaseY);
+            }
+        });
+
+        simulationPanel.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+
+            @Override
+            public void mouseDragged(java.awt.event.MouseEvent e) { // reagowanie na ruch myszy z wciśniętym przyciskiem (przeciąganie celownika)
+                // aktualizujemy pozycję, tylko jeśli w silniku trwa celowanie
+                if (engine.isAiming()) {
+                    int logCurrentX = (int)(e.getX() * 1920.0 / simulationPanel.getWidth());
+                    int logCurrentY = (int)(e.getY() * 1080.0 / simulationPanel.getHeight());
+
+                    // wysyłamy nowe współrzędne przez setter w silniku i odświeżamy ekran
+                    engine.setAimState(true, engine.getAimStartX(), engine.getAimStartY(), logCurrentX, logCurrentY);
+                    simulationPanel.repaint();
+                }
             }
         });
 

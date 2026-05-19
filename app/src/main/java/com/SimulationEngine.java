@@ -8,6 +8,11 @@ public class SimulationEngine {
 
     private boolean started = false; // czy użytkownik już strzelił
 
+    private boolean isAiming = false; // flaga informująca czy gracz aktualnie naciąga celownik
+    private int aimStartX, aimStartY; // współrzędne punktu kliknięcia myszy
+    private int aimCurrentX, aimCurrentY; // współrzędne aktualnej pozycji myszy podczas przeciągania
+
+
     private int width;
     private int height;
     private int[] grid;
@@ -88,4 +93,20 @@ public class SimulationEngine {
     public List<Neutron> getNeutrons() {
         return neutrons;
     }
+
+    // Metoda pozwalająca z zewnątrz zaktualizować cały stan celowania w silniku za jednym razem
+    public void setAimState(boolean isAiming, int startX, int startY, int currentX, int currentY) {
+        this.isAiming = isAiming;
+        this.aimStartX = startX;
+        this.aimStartY = startY;
+        this.aimCurrentX = currentX;
+        this.aimCurrentY = currentY;
+    }
+
+    // Gettery, dzięki którym SimulationPanel będzie mógł pobrać dane do narysowania strzałki
+    public boolean isAiming() { return isAiming; }
+    public int getAimStartX() { return aimStartX; }
+    public int getAimStartY() { return aimStartY; }
+    public int getAimCurrentX() { return aimCurrentX; }
+    public int getAimCurrentY() { return aimCurrentY; }
 }
