@@ -36,21 +36,20 @@ public class Renderer {
             image.setRGB(i % width, i / width, color);
         }
 
+        Graphics2D g2d = image.createGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON); // wygładzone krawędzie kulki
+        g2d.setColor(Color.WHITE);
+
         for (Neutron n : neutrons)
             if (n.isOnBoard()) {
-                for (int dy = -2; dy <= 2; dy++) {
-                    for (int dx = -2; dx <= 2; dx++) {
-                        int nx = n.getPixelX() + dx;
-                        int ny = n.getPixelY() + dy;
-                        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-                            image.setRGB(nx, ny, 0xFFFFFF); // biały - neutron
 
-                        }
-                    }
+                if (n.isOnBoard()) {
+                    int r = 2; // promień kulki w pikselach
+                    g2d.fillOval(n.getPixelX() - r, n.getPixelY() - r, r * 2, r * 2); // rysuje kulkę
                 }
-
             }
+        g2d.dispose(); // zwalniamy zasoby graficzne po skończeniu rysowania
 
         return image;
-    }
+   }
 }
