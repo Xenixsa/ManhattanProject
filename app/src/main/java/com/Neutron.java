@@ -16,21 +16,22 @@ public class Neutron extends Particle {
         setX(getX() + dx);
         setY(getY() + dy);
 
+        int r = 2;
         // odbicie od lewej i prawej ściany
-        if (getX() < 0) {
-            setX(0);
-            dx = -dx;
-        } else if (getX() >= width) {
-            setX(width - 1);
-            dx = -dx;
+        if (getX() < r) { // jeśli wyleciał za ścianę
+            setX(r); // cofa do krawędzi
+            dx = -dx; // odwraca kierunek poziomy
+        } else if (getX() >= width - r) { // wyleciał za prawą ścianę
+            setX(width - r - 1); // cofnij go do krawędzi
+            dx = -dx; // odwróć kierunek poziomy
         }
 
         // odbicie od górnej i dolnej ściany
-        if (getY() < 0) {
-            setY(0);
+        if (getY() < r) {
+            setY(r);
             dy = -dy;
-        } else if (getY() >= height) {
-            setY(height - 1);
+        } else if (getY() >= height - r) {
+            setY(height - r - 1);
             dy = -dy;
         }
 
