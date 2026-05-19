@@ -12,7 +12,8 @@ public class SimulationEngine {
     private int aimStartX, aimStartY; // współrzędne punktu kliknięcia myszy
     private int aimCurrentX, aimCurrentY; // współrzędne aktualnej pozycji myszy podczas przeciągania
 
-
+    private int neutronLimit = 10000;
+    private double neutronCollisionRadius = 2.0;
     private int width;
     private int height;
     private int[] grid;
@@ -45,16 +46,22 @@ public class SimulationEngine {
 
     private void spawnNeutrons(int x,int y){
         int amount = 3;
-        if (neutrons.size() + pendingNeutrons.size() < 10000){ //limit neutronow
+        if (neutrons.size() + pendingNeutrons.size() < neutronLimit){ //limit neutronow
         for (int i=0; i<amount; i++){
             double angle = random.nextDouble() * 2 *Math.PI;
             double speed = 2.0;
             double dx = Math.cos(angle) * speed;
             double dy = Math.sin(angle) *speed;
 
-            pendingNeutrons.add(new Neutron(x,y,dx,dy));}
+            pendingNeutrons.add(new Neutron(x ,y,dx,dy));}
         }
     }
+
+    private void checkCollisions(){
+
+    }
+
+
 
     public void update() {
         // Tutaj logika fizyki, robi Wojtek.
@@ -69,12 +76,28 @@ public class SimulationEngine {
                 continue;
             }
             int index = n.getPixelY() * width + n.getPixelX();
-            if (grid[index] == 1)  {                             //trafil w atom uran
-                grid[index] = 2;
-                n.deactivate();
+            if (grid[index] == 1)  {//trafil w atom uran
+                //metoda, dzieki ktorej nie osiagamy limitu neutronow za szybko
+                int blastRaduis = 3;
+                for (int by = -blastRaduis; by <= blastRaduis; by++){
+                    for (int bx = -blastRaduis; bx<=blastRaduis; bx++){
+                        int clearX = n.getPixelX() + bx;
+                        int clearY = n.getPixelY() +by;
+
+                        //brak mozliwosci wyjscia poza tablice przy krawedziach
+                        if (clearX >= 0 && clearX < width && clearY >= 0 && clearY < height){
+                            int clearIndex = clearY * width + clearX;
+                            if (grid[clearIndex]==1){
+                                grid[clearIndex]=2;
+                            }
+                        }
+                    }
+                }
+                n.deactivate(); //stary neutron znika i pojawiaja sie nowe
                 spawnNeutrons(n.getPixelX(), n.getPixelY());
             }
         }
+        neutrons.removeIf(n -> !n.isOnBoard());  //usuwamy martwe neutrony z pamieci, zeby nie blokowac limitu
         neutrons.addAll(pendingNeutrons);
     }
 
