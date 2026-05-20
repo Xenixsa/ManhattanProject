@@ -17,9 +17,7 @@ public class Renderer {
         this.image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); // tworzymy obrazek raz i będziemy go nadpisywać zamiast tworzyć nowy co klatkę
     }
 
-
-
-    public BufferedImage render(int[] grid, List<Neutron> neutrons) {
+    public BufferedImage render(int[] grid, List<Particle> particles) {
 
         for (int i = 0; i < grid.length; i++) { // przechodzimy przez każdy piksel planszy
 
@@ -40,14 +38,14 @@ public class Renderer {
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON); // wygładzone krawędzie kulki
         g2d.setColor(Color.WHITE);
 
-        for (Neutron n : neutrons)
-            if (n.isOnBoard()) {
-
-                if (n.isOnBoard()) {
-                    int r = 2; // promień kulki w pikselach
-                    g2d.fillOval(n.getPixelX() - r, n.getPixelY() - r, r * 2, r * 2); // rysuje kulkę
-                }
-            }
+        for (Particle p: particles){
+            p.drawSelf(g2d);
+        }
+//        for (Neutron n : neutrons){
+//            if (n.isOnBoard()) {
+//                n.drawSelf(g2d);
+//            }
+//        }
         g2d.dispose(); // zwalniamy zasoby graficzne po skończeniu rysowania
 
         return image;

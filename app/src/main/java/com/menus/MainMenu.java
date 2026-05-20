@@ -113,7 +113,7 @@ public class MainMenu { // klasa głównego menu aplikacji
         SimulationThread simulationThread = new SimulationThread(
                 engine,
                 () -> {
-                    BufferedImage frame = renderer.render(grid, engine.getNeutrons()); // renderuje nową klatkę
+                    BufferedImage frame = renderer.render(grid, engine.getParticles()); // renderuje nową klatkę
                     simulationPanel.setImage(frame); // przekazuje obrazek do panelu
                     simulationPanel.repaint(); // mówi Swingowi, żeby odświeżył ekran
                 }

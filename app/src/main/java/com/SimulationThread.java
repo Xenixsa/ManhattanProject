@@ -20,15 +20,15 @@ public class SimulationThread extends Thread {
             engine.update(); // przesuwa symulację o jeden krok - przesuwa neutrony, sprawdza kolizje
             onRepaint.run(); // wywołuje odświeżenie ekranu - pokazuje nową klatkę użytkownikowi
 
-            try {
-
-                Thread.sleep(16); // czeka 16ms co daje 60 FPS
-
-            } catch (InterruptedException e) { // jeżeli ktoś przerwał wątek z zewnątrz
-
-                Thread.currentThread().interrupt(); // przywraca flagę przerwania
-                break; // wychodzi z pętli
-            }
+//            try {
+//
+//                Thread.sleep(1); // czeka 16ms co daje 60 FPS
+//
+//            } catch (InterruptedException e) { // jeżeli ktoś przerwał wątek z zewnątrz
+//
+//                Thread.currentThread().interrupt(); // przywraca flagę przerwania
+//                break; // wychodzi z pętli
+//            }
         }
     }
 

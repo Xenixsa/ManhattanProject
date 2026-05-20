@@ -17,17 +17,18 @@ public class SimulationEngine {
     private int width;
     private int height;
     private int[] grid;
-    private List<Neutron> neutrons;
+//    private List<Neutron> neutrons;
     private Random random = new Random();
 
-    private List<Atom> atoms;
-    private List<Neutron> pendingNeutrons = new ArrayList<>();  //lista pomocnicza, żeby nie psuć głownej pętli
+    private List<Particle> particles = new ArrayList<>();
+    private List<Particle> pendingNeutrons = new ArrayList<>();
 
     public SimulationEngine(int width, int height, int[] grid){
         this.width = width;
         this.height = height;
         this.grid = grid;
-        this.neutrons = new ArrayList<>();
+//        this.neutrons = new ArrayList<>();
+        this.particles = new ArrayList<>();
     }
 
     public void fireNeutron(int startX, int startY, int releaseX, int releaseY){
@@ -39,21 +40,19 @@ public class SimulationEngine {
         addNeutron(startX, startY, dx, dy);
     }
 
-    public void addNeutron(double x, double y,double dx, double dy){
-        started = true; // zaznaczamy, że symulacja została zaczęta
-        neutrons.add(new Neutron(x,y,dx,dy));
+    public void addNeutron(double x, double y, double dx, double dy){
+        started = true;
+        particles.add(new Neutron(x, y, dx, dy)); // ← particles zamiast neutrons
     }
 
-    private void spawnNeutrons(int x,int y){
-        int amount = 3;
-        if (neutrons.size() + pendingNeutrons.size() < neutronLimit){ //limit neutronow
-        for (int i=0; i<amount; i++){
-            double angle = random.nextDouble() * 2 *Math.PI;
-            double speed = 2.0;
-            double dx = Math.cos(angle) * speed;
-            double dy = Math.sin(angle) *speed;
-
-            pendingNeutrons.add(new Neutron(x ,y,dx,dy));}
+    private void spawnNeutrons(int x, int y) {
+        if (particles.size() + pendingNeutrons.size() < neutronLimit) {
+            for (int i = 0; i < 3; i++) {
+                double angle = random.nextDouble() * 2 * Math.PI;
+                double speed = 2.0;
+                pendingNeutrons.add(new Neutron(x, y,
+                        Math.cos(angle) * speed, Math.sin(angle) * speed));
+            }
         }
     }
 
@@ -61,61 +60,87 @@ public class SimulationEngine {
 
     }
 
+    public List<Particle> getParticles(){return particles;}
 
 
     public void update() {
-        // Tutaj logika fizyki, robi Wojtek.
         pendingNeutrons.clear();
 
-        for (Neutron n: neutrons){
-            if (n.isOnBoard() == false){
-                continue;
-            }
-            n.move(width,height);
-            if (n.isOnBoard() == false){
-                continue;
-            }
-            int index = n.getPixelY() * width + n.getPixelX();
-            if (grid[index] == 1)  {//trafil w atom uran
-                //metoda, dzieki ktorej nie osiagamy limitu neutronow za szybko
-                int blastRaduis = 3;
-                for (int by = -blastRaduis; by <= blastRaduis; by++){
-                    for (int bx = -blastRaduis; bx<=blastRaduis; bx++){
-                        int clearX = n.getPixelX() + bx;
-                        int clearY = n.getPixelY() +by;
+        for (Particle p : particles) {
+            if (p instanceof Neutron n) {
+                if (!n.isOnBoard()) continue;
+                n.move(width, height);
+                if (!n.isOnBoard()) continue;
 
-                        //brak mozliwosci wyjscia poza tablice przy krawedziach
-                        if (clearX >= 0 && clearX < width && clearY >= 0 && clearY < height){
-                            int clearIndex = clearY * width + clearX;
-                            if (grid[clearIndex]==1){
-                                grid[clearIndex]=2;
+                int index = n.getPixelY() * width + n.getPixelX();
+                if (grid[index] == 1) {
+                    int blastRadius = 3;
+                    for (int by = -blastRadius; by <= blastRadius; by++) {
+                        for (int bx = -blastRadius; bx <= blastRadius; bx++) {
+                            int cx = n.getPixelX() + bx;
+                            int cy = n.getPixelY() + by;
+                            if (cx >= 0 && cx < width && cy >= 0 && cy < height) {
+                                int ci = cy * width + cx;
+                                if (grid[ci] == 1) grid[ci] = 2;
                             }
                         }
                     }
+                    n.deactivate();
+                    spawnNeutrons(n.getPixelX(), n.getPixelY());
+                    spawnFragments(n.getPixelX(), n.getPixelY());
                 }
-                n.deactivate(); //stary neutron znika i pojawiaja sie nowe
-                spawnNeutrons(n.getPixelX(), n.getPixelY());
+
+            } else if (p instanceof Fragments f) {
+                f.move(width, height); // odbija się od ścian, brak innych interakcji
             }
         }
-        neutrons.removeIf(n -> !n.isOnBoard());  //usuwamy martwe neutrony z pamieci, zeby nie blokowac limitu
-        neutrons.addAll(pendingNeutrons);
+
+        particles.removeIf(p -> (p instanceof Neutron n && !n.isOnBoard()) || (p instanceof Fragments f && !f.isAlive()));
+        particles.addAll(pendingNeutrons);
     }
 
+    private void spawnFragments(int x, int y) {
+        // dwa fragmenty w przeciwnych kierunkach
+        double angle = random.nextDouble() * 2 * Math.PI;
+        double speed = 1.2;
 
+        double dx1 = Math.cos(angle) * speed;
+        double dy1 = Math.sin(angle) * speed;
+        double dx2 = -dx1; // dokładnie przeciwny kierunek
+        double dy2 = -dy1;
+
+        pendingNeutrons.add(new Fragments(x, y, dx1, dy1));
+        pendingNeutrons.add(new Fragments(x, y, dx2, dy2));
+    }
 
     public boolean isFinished() {
-        if (!started) return false; // symulacja nie zakończona, jeśli jeszcze nie zaczęta
-        for (Neutron n : neutrons) {
-            if (n.isOnBoard()) {
-                return false;
-            }
+        for (int i = 0; i < grid.length; i++) {
+            if (grid[i] == 1) return false; // zostały jeszcze nierozszczepione atomy
         }
-        return true; // na razie nigdy nie kończy
+        return true; // wszystkie żółte zniszczone
     }
+//    public boolean isFinished() {
+//        if (!started){
+//            return false;
+//        }
+//        for (Particle p: particles){
+//            if (p instanceof Neutron n && n.isOnBoard()){
+//                return false;
+//            }
+//        }
+//        return true;
+////        if (!started) return false; // symulacja nie zakończona, jeśli jeszcze nie zaczęta
+////        for (Neutron n : neutrons) {
+////            if (n.isOnBoard()) {
+////                return false;
+////            }
+////        }
+////        return true; // na razie nigdy nie kończy
+//    }
 
-    public List<Neutron> getNeutrons() {
-        return neutrons;
-    }
+//    public List<Neutron> getNeutrons() {
+//        return neutrons;
+//    }
 
     // Metoda pozwalająca z zewnątrz zaktualizować cały stan celowania w silniku za jednym razem
     public void setAimState(boolean isAiming, int startX, int startY, int currentX, int currentY) {

@@ -1,10 +1,14 @@
 package com;
 
+import java.awt.*;
+
 public class Neutron extends Particle {
 
     private double dx;
     private double dy;
     private boolean onBoard;
+
+    public int r = 2; // promień kulki w pikselach
 
     public Neutron(double x, double y, double dx, double dy){
         super(x, y);
@@ -35,6 +39,11 @@ public class Neutron extends Particle {
             dy = -dy;
         }
 
+    }
+
+    @Override
+    public void drawSelf(Graphics2D g2d){
+        g2d.fillOval(this.getPixelX() - r, this.getPixelY() - r, r * 2, r * 2); // rysuje kulkę
     }
 
     public int getPixelX(){
