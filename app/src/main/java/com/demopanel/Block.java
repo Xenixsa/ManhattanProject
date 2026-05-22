@@ -30,6 +30,12 @@ public class Block extends JButton implements MouseListener {
         isPainted = true;
     }
 
+    public void clear() {
+        setBackground(Color.WHITE);
+        isPainted = false;
+    }
+
+
     @Override
     public String toString(){
         if(this.isPainted){

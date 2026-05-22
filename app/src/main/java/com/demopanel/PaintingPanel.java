@@ -72,6 +72,21 @@ public class PaintingPanel extends JPanel {
                 System.exit(0);
             }
         });
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_L, 0), "loadGrid");
+        actionMap.put("loadGrid", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                loadGrid();
+            }
+        });
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_R, 0), "resetGrid");
+        actionMap.put("resetGrid", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                resetGrid();
+            }
+        });
+
     }
 
     public void saveGrid(){
@@ -104,6 +119,48 @@ public class PaintingPanel extends JPanel {
                 }
             }
             System.out.println(stringBuilder);
+        }
+    }
+
+    public void resetGrid() {
+        for (int r = 0; r < maxRow; r++){
+            for (int c = 0; c < maxCol; c++) {
+                blocks[c][r].clear();
+            }
+        }
+    }
+    
+    public void loadGrid() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Wczytaj siatkę");
+        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Pliki tekstowe (*.txt)", "txt"));
+
+        int result = fileChooser.showOpenDialog(this);
+        if (result != JFileChooser.APPROVE_OPTION) return;
+
+        java.io.File file = fileChooser.getSelectedFile();
+
+        try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file))) {
+            // Wyczyść siatkę
+            for (int r = 0; r < maxRow; r++)
+                for (int c = 0; c < maxCol; c++)
+                    blocks[c][r].clear();
+
+            String line;
+            int r = 0;
+            while ((line = reader.readLine()) != null && r < maxRow) {
+                String[] tokens = line.split(" ");
+                for (int c = 0; c < Math.min(tokens.length, maxCol); c++) {
+                    if ("1".equals(tokens[c])) {
+                        blocks[c][r].paint();
+                    }
+                }
+                r++;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Błąd wczytywania pliku:\n" + e.getMessage(),
+                    "Błąd", JOptionPane.ERROR_MESSAGE);
         }
     }
 
