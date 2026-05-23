@@ -233,6 +233,18 @@ public class MainMenu { // klasa głównego menu aplikacji
                     simulationPanel.repaint();
                 }
             }
+
+
+            @Override
+            public void mouseMoved(java.awt.event.MouseEvent e) {
+                // przeliczamy pozycję kursora na współrzędne planszy i przekazujemy do panelu
+                int X = (int) (e.getX() * 1920.0 / simulationPanel.getWidth());
+                int Y = (int) (e.getY() * 1080.0 / simulationPanel.getHeight());
+                simulationPanel.setHoverPosition(X, Y);
+
+                // odświeżamy ekran tylko przy pauzie - poza pauzą robi to wątek symulacji
+                if (engine.isPaused()) simulationPanel.repaint();
+            }
         });
 
         simulationThread.start(); // startujemy wątek - musi być po show() żeby panel był już widoczny

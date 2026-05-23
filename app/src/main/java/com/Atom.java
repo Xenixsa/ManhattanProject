@@ -29,4 +29,11 @@ public class Atom extends Particle{
         g2d.setColor(Color.YELLOW);
         g2d.fillOval((int)getX() - 4,(int)getY() - 4,8,8);
     }
+
+    @Override
+    public String getInfo() {
+        return String.format("Atom\nPozycja (%.0f, %.0f)\nStan: %s",
+                getX(), getY(),
+                isSplit() ? "rozszczepiony" : "nienaruszony");
+    }
 }

@@ -63,4 +63,13 @@ public class Fragments extends Particle {
         g2d.setColor(color);
         g2d.fillOval((int)getX() - R, (int)getY() - R, R * 2, R * 2);
     }
+
+    @Override
+    public String getInfo() {
+        int ticksLeft = LIFETIME_TICKS - ticksAlive;
+        // dzielimy przez 60 bo tyle ticków mija na sekundę (przy 60 FPS)
+        return String.format("Fragment\nPrędkość: (%.2f, %.2f)\nPozostało: %.1f s",
+        dx, dy,
+        ticksLeft / 60.0);
+    }
 }

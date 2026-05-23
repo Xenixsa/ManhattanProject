@@ -19,6 +19,10 @@ public abstract class Particle {
     // i nie musi wiedzieć, czy ma do czynienia z neutronem, czy fragmentem
     public abstract Particle copy();
 
+    // Każda cząstka zwraca opis siebie - wyświetlany w dymku po zatrzymaniu symulacji.
+    // Abstrakcyjna, bo każdy typ cząstki ma inne dane do pokazania
+    public abstract String getInfo();
+
 
     public double getX() {
         return x;

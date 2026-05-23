@@ -72,6 +72,24 @@ public class SimulationEngine {
         }
     }
 
+    // Szuka cząstki w okolicy podanych współrzędnych (w przestrzeni 1920x1080).
+    // Zwraca null, jeśli żadna cząstka nie jest wystarczająco blisko.
+    public Particle getParticleAt(double x, double y) {
+        double threshold = 20.0; // promień wykrywania w pikselach
+        Particle closest = null;
+        double closestDist =  Double.MAX_VALUE;
+        synchronized (particles) { // synchronized, bo lista jest współdzielona między wątkami
+            for (Particle p : particles) {
+                double dist = Math.hypot(p.getX() - x, p.getY() - y); // hypot to pierwiastek z (a^2 + b^2) - odległość między dwoma punktami
+                if (dist < threshold && dist < closestDist) {
+                    closest = p;
+                    closestDist = dist;
+                }
+            }
+        }
+        return closest;
+    }
+
 
     public void update() {
 

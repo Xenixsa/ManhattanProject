@@ -71,4 +71,11 @@ public class Neutron extends Particle {
         return copy;
     }
 
+    @Override
+    public String getInfo() {
+        // String.format("%.2f") zaokrągla do 2 miejsc po przecinku - ładniejszy wynik niż surowy double
+        return String.format("Neutron\nPrędkość: (%.2f, %.2f)\nStan: %s",
+                dx, dy, onBoard ? "aktywny" : "niekatywny");
+    }
+
 }
