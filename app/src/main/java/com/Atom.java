@@ -18,6 +18,13 @@ public class Atom extends Particle{
 
     }
 
+    @Override
+    public Atom copy() {
+        Atom copy = new Atom(getX(), getY());
+        if (isSplit()) copy.split(); // zachowujemy stan rozszczepienia
+        return copy;
+    }
+
     public void drawSelf(Graphics2D g2d){
         g2d.setColor(Color.YELLOW);
         g2d.fillOval((int)getX() - 4,(int)getY() - 4,8,8);

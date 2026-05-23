@@ -10,6 +10,10 @@ public class Neutron extends Particle {
 
     public int r = 2; // promień kulki w pikselach
 
+    public double getDx() { return dx; }
+    public double getDy() { return dy; }
+
+
     public Neutron(double x, double y, double dx, double dy){
         super(x, y);
         this.dy = dy;
@@ -43,6 +47,7 @@ public class Neutron extends Particle {
 
     @Override
     public void drawSelf(Graphics2D g2d){
+        g2d.setColor(Color.WHITE); // neutron zawsze biały, niezależnie od tego, co rysowało przed nim
         g2d.fillOval(this.getPixelX() - r, this.getPixelY() - r, r * 2, r * 2); // rysuje kulkę
     }
 
@@ -59,6 +64,11 @@ public class Neutron extends Particle {
         onBoard = false;
     }
 
-    //
+    @Override
+    public Neutron copy() {
+        Neutron copy = new Neutron(getX(), getY(), dx, dy); // ta sama pozycja i prędkość
+        if (!onBoard) copy.deactivate(); // zachowujemy stan aktywności
+        return copy;
+    }
 
 }

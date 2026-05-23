@@ -23,6 +23,10 @@ public class SimulationEngine {
     private List<Particle> particles = new ArrayList<>();
     private List<Particle> pendingNeutrons = new ArrayList<>();
 
+    private final SimulationHistory history = new SimulationHistory(); // Caretaker - przechowuje zdjęcia
+    private volatile boolean paused = false; // volatile - czyta wątek symulacji, ustawia wątek UI
+    private boolean gridShared = false; // true = aktualny grid trzyma już jakąś pamiątkę
+
     public SimulationEngine(int width, int height, int[] grid){
         this.width = width;
         this.height = height;
@@ -60,10 +64,21 @@ public class SimulationEngine {
 
     }
 
-    public List<Particle> getParticles(){return particles;}
+    public List<Particle> getParticles() {
+        // Zwracamy kopię pod lockiem - inaczej wątek renderujący i wątek UI
+        // mogą jednocześnie czytać i modyfikować tę samą listę
+        synchronized (particles) {
+            return new ArrayList<>(particles);
+        }
+    }
 
 
     public void update() {
+
+        if (paused) return; // przy pauzie nie liczymy fizyki i nie zapisujemy klatek
+
+        history.save(save()); // zapamiętujemy stan SPRZED tego kroku, żeby móc się cofnąć
+
         pendingNeutrons.clear();
 
         for (Particle p : particles) {
@@ -74,6 +89,7 @@ public class SimulationEngine {
 
                 int index = n.getPixelY() * width + n.getPixelX();
                 if (grid[index] == 1) {
+                    ensureGridWritable(); // klonuj grid przed zmianą, żeby nie zepsuć zapisanych
                     int blastRadius = 3;
                     for (int by = -blastRadius; by <= blastRadius; by++) {
                         for (int bx = -blastRadius; bx <= blastRadius; bx++) {
@@ -157,4 +173,48 @@ public class SimulationEngine {
     public int getAimStartY() { return aimStartY; }
     public int getAimCurrentX() { return aimCurrentX; }
     public int getAimCurrentY() { return aimCurrentY; }
+
+    // Tworzy zdjęcie aktualnego stanu (rola Originatora). Od tej chwili grid jest tylko-do-odczytu,
+    // bo właśnie oddaliśmy jego referencję pamiątce.
+    public SimulationMemento save() {
+        gridShared = true;
+        return new SimulationMemento(grid, particles, started);
+    }
+
+    // Przywraca stan ze zdjęcia. Bierzemy referencję planszy z pamiątki
+    // i znów oznaczamy ją jako współdzieloną.
+    public void restore(SimulationMemento memento) {
+        // Lock na particles - ten sam co w getParticles(),
+        // więc restore i render nigdy nie wykonają się równocześnie
+        synchronized (particles) { // to oznacza "tylko jeden wątek na raz może wejść do bloku trzymającego lock na tym obiekcie"
+            grid = memento.getGrid();
+            gridShared = true;
+            particles.clear();
+            particles.addAll(memento.getParticles()); // getParticles() zwraca świeże kopie
+        }
+        started = memento.isStarted();
+    }
+
+    // Jeśli aktualny grid jest współdzielony z pamiątką, klonujemy go PRZED modyfikacją.
+    // Bez tego nadpisalibyśmy dane w zapisanych zdjęciach.
+    private void ensureGridWritable() {
+        if (gridShared) {
+            grid = grid.clone();
+            gridShared = false;
+        }
+    }
+
+    // Getter potrzebny dlatego, że silnik może podmienić referencję grid pod spodem (copy-on-write).
+    // Renderer musi zawsze pobierać aktualną tablicę przez silnik, nie trzymać starej referencji.
+    public int[] getGrid() { return grid; }
+
+    public void togglePause() { paused = !paused; }
+    public boolean isPaused() { return paused; }
+
+    // Cofa symulację o jedną zapisaną klatkę. Wywołuj tylko przy pauzie -
+    // wtedy wątek symulacji nic nie robi i nie ma wyścigu o wspólne dane.
+    public void rewind() {
+        SimulationMemento previous = history.undo();
+        if (previous != null) restore(previous);
+    }
 }

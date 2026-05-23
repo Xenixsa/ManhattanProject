@@ -43,6 +43,21 @@ public class Fragments extends Particle {
         return ticksAlive < LIFETIME_TICKS;
     }
 
+    // Prywatny konstruktor kopiujący - używamy wyłącznie przez copy().
+    // NIE rusza statycznego colorIndex, więc kopia dostaje dokładnie ten sam kolor.
+    private Fragments(Fragments original) {
+        super(original.getX(), original.getY());
+        this.dx = original.dx;
+        this.dy = original.dy;
+        this.color = original.color;
+        this.ticksAlive = original.ticksAlive; // inaczej kopia żyłaby od nowa 5 sekund
+    }
+
+    @Override
+    public Fragments copy() {
+        return new Fragments(this);
+    }
+
     @Override
     public void drawSelf(Graphics2D g2d) {
         g2d.setColor(color);

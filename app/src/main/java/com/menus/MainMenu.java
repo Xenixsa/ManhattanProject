@@ -8,7 +8,11 @@ import com.SimulationThread;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+
+import java.awt.event.ActionEvent;
+import java.awt.FlowLayout;
 
 public class MainMenu { // klasa głównego menu aplikacji
 
@@ -113,14 +117,64 @@ public class MainMenu { // klasa głównego menu aplikacji
         SimulationThread simulationThread = new SimulationThread(
                 engine,
                 () -> {
-                    BufferedImage frame = renderer.render(grid, engine.getParticles()); // renderuje nową klatkę
+                    BufferedImage frame = renderer.render(engine.getGrid(), engine.getParticles()); // renderuje nową klatkę
                     simulationPanel.setImage(frame); // przekazuje obrazek do panelu
                     simulationPanel.repaint(); // mówi Swingowi, żeby odświeżył ekran
                 }
         );
 
-        container.add(simulationPanel, "SIMULATION"); // rejestrujemy ekran symulacji jako kartę
-        cardLayout.show(container, "SIMULATION");     // przełączamy na ekran symulacji
+        // Przyciski sterowania
+        JButton pauseButton = new JButton("Pauza [Spacja]");
+        JButton rewindButton = new JButton("Cofnij [<-]");
+        rewindButton.setEnabled(false); // aktywny dopiero po wstrzymaniu symulacji
+
+        pauseButton.addActionListener(e -> {
+            engine.togglePause();
+            pauseButton.setText(engine.isPaused() ? "Wznów [Spacja]" : "Pauza [Spacja]");
+            rewindButton.setEnabled(engine.isPaused());
+        });
+
+        rewindButton.addActionListener(e -> {
+            if (engine.isPaused()) engine.rewind();
+        });
+
+        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 6));
+        controlPanel.setBackground(Color.DARK_GRAY);
+        controlPanel.add(pauseButton);
+        controlPanel.add(rewindButton);
+
+        JPanel simulationWrapper = new JPanel(new BorderLayout());
+        simulationWrapper.add(simulationPanel, BorderLayout.CENTER);
+        simulationWrapper.add(controlPanel, BorderLayout.SOUTH);
+
+        container.add(simulationWrapper, "SIMULATION");
+        cardLayout.show(container, "SIMULATION");
+
+        // Key bindings - spacja i strzałka w lewo wołają dokładnie te same akcje co przyciski.
+        // doClick() symuluje kliknięcie, więc logika jest tylko w jednym miejscu (addActionListener wyżej).
+        InputMap inputMap = simulationPanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap actionMap = simulationPanel.getActionMap();
+
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0), "togglePause");
+        actionMap.put("togglePause", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                pauseButton.doClick();
+            }
+        });
+
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0), "rewind");
+        actionMap.put("rewind", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (engine.isPaused()) rewindButton.doClick();
+            }
+        });
+
+
+
+
+
         mainMenuFrame.setTitle("Symulacja");           // aktualizujemy tytuł okna
         mainMenuFrame.setResizable(true);              // pozwalamy zmieniać rozmiar podczas symulacji
 
