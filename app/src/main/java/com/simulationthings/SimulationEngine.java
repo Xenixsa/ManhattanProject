@@ -1,4 +1,8 @@
-package com;
+package com.simulationthings;
+
+import com.particles.Fragments;
+import com.particles.Neutron;
+import com.particles.Particle;
 
 import java.util.ArrayList;
 import java.util.List;

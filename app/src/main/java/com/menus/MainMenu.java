@@ -1,10 +1,10 @@
 package com.menus;
 
-import com.Renderer;
+import com.simulationthings.Renderer;
 import com.demopanel.PaintingPanel;
-import com.SimulationEngine;
-import com.SimulationPanel;
-import com.SimulationThread;
+import com.simulationthings.SimulationEngine;
+import com.simulationthings.SimulationPanel;
+import com.simulationthings.SimulationThread;
 
 import javax.swing.*;
 import java.awt.*;

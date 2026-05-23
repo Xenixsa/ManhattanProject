@@ -1,4 +1,4 @@
-package com;
+package com.simulationthings;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,6 @@
-package com;
+package com.simulationthings;
+
+import com.particles.Particle;
 
 import javax.swing.*;
 import java.awt.*;

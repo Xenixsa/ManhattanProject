@@ -1,8 +1,8 @@
-package com;
+package com.particles;
 
 import java.awt.*;
 
-public class Atom extends Particle{
+public class Atom extends Particle {
 
     private boolean split;
 

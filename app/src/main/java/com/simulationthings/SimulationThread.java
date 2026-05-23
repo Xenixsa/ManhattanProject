@@ -1,4 +1,4 @@
-package com;
+package com.simulationthings;
 
 public class SimulationThread extends Thread {
 
