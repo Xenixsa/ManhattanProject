@@ -28,7 +28,7 @@ public class Renderer {
             if (grid[i] == 1) {
                 color = 0xFFFF00; // żółty - atom uranu
             } else if (grid[i] == 2) {
-                color = 0x404040; // pomarańczowy - rozszczepiony atom
+                color = 0x404040; // szary - tak jak narysowane atom
             } else {
                 color = 0x000000; // czarny - puste miejsce
             }

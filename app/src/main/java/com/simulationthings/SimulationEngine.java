@@ -16,7 +16,7 @@ public class SimulationEngine {
     private int aimStartX, aimStartY; // współrzędne punktu kliknięcia myszy
     private int aimCurrentX, aimCurrentY; // współrzędne aktualnej pozycji myszy podczas przeciągania
 
-    private int neutronLimit = 10000;
+    private int neutronLimit = 10000000;
     private double neutronCollisionRadius = 2.0;
     private int width;
     private int height;
