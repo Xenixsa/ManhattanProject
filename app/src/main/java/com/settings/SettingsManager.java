@@ -29,7 +29,7 @@ public class SettingsManager {
         }
     }
 
-    private void save(){
+    public void save(){
         try {
             FileOutputStream outputStream = new FileOutputStream(File);
             properties.store(outputStream,"SimulationSettings");

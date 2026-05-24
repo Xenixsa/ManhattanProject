@@ -35,6 +35,7 @@ public class SettingsPanel extends JPanel {
         backButton.addActionListener(e -> {
             jFrame.setContentPane(mainMenuPanel);
             jFrame.revalidate();
+            settingsManager.save();
         });
 
         Dimension gap = new Dimension(0, 15);
