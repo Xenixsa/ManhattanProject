@@ -51,12 +51,8 @@ public class MainMenu { // klasa głównego menu aplikacji
         container.add(menuPanel, "MENU"); // rejestrujemy panel menu jako pierwszą kartę
 
         mainMenuFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        //Dimension mainMenuDimension = new Dimension(800, 600);
-        //mainMenuFrame.setSize(mainMenuDimension);
         mainMenuFrame.setTitle("Manhattan");
         mainMenuFrame.setResizable(true); // pozwala na zmianę rozmiaru, aby system mógł poprawnie zmaksymalizować okno
-        //mainMenuFrame.setLocationRelativeTo(null); // wyśrodkowanie na ekranie - tylko raz przy starcie
-        //mainMenuFrame.setResizable(false);
         mainMenuFrame.add(container); // do okna trafia kontener, nie bezpośrednio panel
         mainMenuFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         mainMenuFrame.setVisible(true);
@@ -81,7 +77,6 @@ public class MainMenu { // klasa głównego menu aplikacji
 
         container.add(drawingPanel, "DRAWING"); // rejestrujemy jako kartę
         cardLayout.show(container, "DRAWING"); // przełączamy na ekran rysowania
-        //mainMenuFrame.pack(); // rozszerza okno do rozmiaru PaintingPanel
         mainMenuFrame.setTitle("Narysuj atomy uranu"); // aktualizujemy tytuł okna
     }
 

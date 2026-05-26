@@ -67,8 +67,8 @@ public class SimulationPanel extends JPanel { // dziedziczymy po JPanel - panel 
             int currentScreenY = (int) (engine.getAimCurrentY() * scaleY);
 
             // obliczenie dystansu (wektor) przeciągnięcia myszy od punktu startu
-            int diffX = currentScreenX - startScreenX;
-            int diffY = currentScreenY - startScreenY;
+            //int diffX = currentScreenX - startScreenX;
+            //int diffY = currentScreenY - startScreenY;
 
             // rysujemy linię od punktu kliknięcia myszy
             g2d.drawLine(startScreenX, startScreenY, currentScreenX, currentScreenY);

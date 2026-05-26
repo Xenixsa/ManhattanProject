@@ -21,7 +21,6 @@ public class Neutron extends Particle {
         setX(getX() + dx);
         setY(getY() + dy);
 
-        int r = 2;
         // odbicie od lewej i prawej ściany
         if (getX() < r) { // jeśli wyleciał za ścianę
             setX(r); // cofa do krawędzi

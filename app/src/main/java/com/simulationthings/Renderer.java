@@ -40,17 +40,12 @@ public class Renderer {
         }
 
         Graphics2D g2d = image.createGraphics();
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON); // wygładzone krawędzie kulki
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF); // wygładzone krawędzie kulki
         g2d.setColor(Color.WHITE);
 
         for (Particle p: particles){
             p.drawSelf(g2d);
         }
-//        for (Neutron n : neutrons){
-//            if (n.isOnBoard()) {
-//                n.drawSelf(g2d);
-//            }
-//        }
         g2d.dispose(); // zwalniamy zasoby graficzne po skończeniu rysowania
 
         return image;
