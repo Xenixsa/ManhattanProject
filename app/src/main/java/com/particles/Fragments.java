@@ -68,8 +68,9 @@ public class Fragments extends Particle {
     public String getInfo() {
         int ticksLeft = LIFETIME_TICKS - ticksAlive;
         // dzielimy przez 60 bo tyle ticków mija na sekundę (przy 60 FPS)
-        return String.format("Fragment\nPrędkość: (%.2f, %.2f)\nPozostało: %.1f s",
-        dx, dy,
+        double speed = Math.hypot(dx, dy); // długość wektora prędkości, jak szybko leci cząstka
+        return String.format("Fragment\nPrędkość: %.2f px/klatkę\nPozostało: %.1f s",
+        speed,
         ticksLeft / 60.0);
     }
 }
