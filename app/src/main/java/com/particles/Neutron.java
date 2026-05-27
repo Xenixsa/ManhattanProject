@@ -40,6 +40,10 @@ public class Neutron extends Particle {
         }
 
     }
+    @Override
+    public void update(int width, int height) {
+        move(width, height);
+    }
 
     @Override
     public void drawSelf(Graphics2D g2d){

@@ -107,7 +107,7 @@ public class SimulationEngine {
         //history.save(save()); // zapamiętujemy stan SPRZED tego kroku, żeby móc się cofnąć
 
         pendingNeutrons.clear();
-
+        synchronized (particles){
         for (Particle p : particles) {
             if (p instanceof Neutron n) {
                 if (!n.isOnBoard()) continue;
@@ -134,13 +134,13 @@ public class SimulationEngine {
                 }
 
             } else if (p instanceof Fragments f) {
-                f.move(width, height); // odbija się od ścian, brak innych interakcji
+                f.update(width, height); // odbija się od ścian, brak innych interakcji
             }
         }
 
         particles.removeIf(p -> (p instanceof Neutron n && !n.isOnBoard()) || (p instanceof Fragments f && !f.isAlive()));
         particles.addAll(pendingNeutrons);
-    }
+    }}
 
     private void spawnFragments(int x, int y) {
         // dwa fragmenty w przeciwnych kierunkach

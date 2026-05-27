@@ -38,7 +38,10 @@ public class Fragments extends Particle {
         if (getY() < R) { setY(R); dy = -dy; }
         else if (getY() >= height - R) { setY(height - R - 1); dy = -dy; }
     }
-
+    @Override
+    public void update(int width, int height) {
+        move(width, height);
+    }
     public boolean isAlive(){
         return ticksAlive < LIFETIME_TICKS;
     }

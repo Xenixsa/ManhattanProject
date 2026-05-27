@@ -15,9 +15,12 @@ public class Atom extends Particle {
     }
 
     public void split() {
-
+        this.split = true;
     }
-
+    @Override
+    public void update(int width, int height) {
+        //na razie puste
+    }
     @Override
     public Atom copy() {
         Atom copy = new Atom(getX(), getY());
