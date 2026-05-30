@@ -1,5 +1,7 @@
 package com.demopanel;
 
+import com.settings.SettingsManager;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -10,14 +12,18 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 public class PaintingPanel extends JPanel {
-//    public final int maxCol = 48;  //fullhd 48
-    public final int maxCol = 192;  //fullhd 48
-//    public final int maxRow = 27;  //       27
-    public final int maxRow = 108;  //       27
-//    public final int nodeSize = 40;
-    public final int nodeSize = 10;
+    public final int maxCol = 48;  //fullhd 48
+//    public final int maxCol = 192;  //fullhd 48
+    public final int maxRow = 27;  //       27
+//    public final int maxRow = 108;  //       27
+    public final int nodeSize = 40;
+//    public final int nodeSize = 10;
     final int screenWidth = nodeSize*maxCol;
     final int screenHeight = nodeSize*maxRow;
+
+    SettingsManager settingsManager = new SettingsManager();
+    String savedlastdirectory = settingsManager.getStringSetting("lastDirectory",System.getProperty("user.dir"));
+    private java.io.File lastDirectory = new java.io.File(savedlastdirectory);
 
     boolean paintMode = false;
 
@@ -132,9 +138,9 @@ public class PaintingPanel extends JPanel {
             }
         }
     }
-    
+
     public void loadGrid() {
-        JFileChooser fileChooser = new JFileChooser();
+        JFileChooser fileChooser = new JFileChooser(lastDirectory);
         fileChooser.setDialogTitle("Wczytaj siatkę");
         fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Pliki tekstowe (*.txt)", "txt"));
 
@@ -142,6 +148,7 @@ public class PaintingPanel extends JPanel {
         if (result != JFileChooser.APPROVE_OPTION) return;
 
         java.io.File file = fileChooser.getSelectedFile();
+        lastDirectory = file.getParentFile(); // remember for next time
 
         try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file))) {
             // Wyczyść siatkę
@@ -165,6 +172,9 @@ public class PaintingPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Błąd wczytywania pliku:\n" + e.getMessage(),
                     "Błąd", JOptionPane.ERROR_MESSAGE);
         }
+        lastDirectory = file.getParentFile();
+        settingsManager.set("lastDirectory", lastDirectory.getAbsolutePath());
+        settingsManager.save();
     }
 
 }
