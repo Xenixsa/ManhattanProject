@@ -20,6 +20,7 @@ public class SimulationEngine {
     private int width;
     private int height;
     private int[] grid;
+    private final boolean showFragments;
 
     private int framesSinceLastSave = 0; // licznik klatek od ostatniego zapisu historii
     private Random random = new Random();
@@ -31,11 +32,12 @@ public class SimulationEngine {
     private volatile boolean paused = false; // volatile - czyta wątek symulacji, ustawia wątek UI
     private boolean gridShared = false; // true = aktualny grid trzyma już jakąś pamiątkę
 
-    public SimulationEngine(int width, int height, int[] grid){
+    public SimulationEngine(int width, int height, int[] grid, boolean showFragments){
         this.width = width;
         this.height = height;
         this.grid = grid;
         this.particles = new ArrayList<>();
+        this.showFragments = showFragments;
     }
 
     public void fireNeutron(int startX, int startY, int releaseX, int releaseY){
@@ -130,7 +132,7 @@ public class SimulationEngine {
                     }
                     n.deactivate();
                     spawnNeutrons(n.getPixelX(), n.getPixelY());
-                    spawnFragments(n.getPixelX(), n.getPixelY());
+                    if (showFragments) spawnFragments(n.getPixelX(), n.getPixelY());
                 }
 
             } else if (p instanceof Fragments f) {

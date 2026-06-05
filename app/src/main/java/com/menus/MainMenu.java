@@ -24,8 +24,15 @@ public class MainMenu { // klasa głównego menu aplikacji
     CardLayout cardLayout = new CardLayout(); // przełącza widoczny panel
     JPanel container = new JPanel(cardLayout); // kontener trzymający wszystkie karty (MENU, DRAWING, SIMULATION)
     JPanel menuPanel = new JPanel(); // panel ekranu startowego z przyciskami
+    private SettingsPanel settingsPanelRef = null;
+    private SettingsManager settingsManagerRef = null;
+    private int configWindowWidth = 1920;
+    private int configWindowHeight = 1080;
 
     public MainMenu() { // konstruktor - buduje i wyświetla menu
+
+        // load settings manager early so resolution/fragments are available
+        settingsManagerRef = new SettingsManager();
 
         JButton startbutton = new JButton("Start"); // otwiera panel rysowania atomów
         JButton settingsbutton = new JButton("Settings"); // TODO: ustawienia symulacji
@@ -52,11 +59,22 @@ public class MainMenu { // klasa głównego menu aplikacji
 
         container.add(menuPanel, "MENU"); // rejestrujemy panel menu jako pierwszą kartę
 
+        // Apply configured resolution for main menu and panels
+        try {
+            String resolution = settingsManagerRef.getStringSetting("resolution", "1920x1080");
+            String[] parts = resolution.split("x");
+            configWindowWidth = Integer.parseInt(parts[0]);
+            configWindowHeight = Integer.parseInt(parts[1]);
+            menuPanel.setPreferredSize(new Dimension(configWindowWidth, configWindowHeight));
+            mainMenuFrame.setSize(configWindowWidth, configWindowHeight);
+            mainMenuFrame.setLocationRelativeTo(null);
+        } catch (Exception ignored) {
+        }
+
         mainMenuFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mainMenuFrame.setTitle("Manhattan");
         mainMenuFrame.setResizable(true); // pozwala na zmianę rozmiaru, aby system mógł poprawnie zmaksymalizować okno
         mainMenuFrame.add(container); // do okna trafia kontener, nie bezpośrednio panel
-        mainMenuFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         mainMenuFrame.setVisible(true);
 
         startbutton.addActionListener(e -> openDrawing());
@@ -65,11 +83,13 @@ public class MainMenu { // klasa głównego menu aplikacji
     }
 
     private void openSettingsPanel(){
-        SettingsManager settingsManager = new SettingsManager();
-        SettingsPanel settingsPanel = new SettingsPanel(mainMenuFrame,menuPanel,settingsManager);
+        if (settingsManagerRef == null) settingsManagerRef = new SettingsManager();
+        if (settingsPanelRef == null) {
+            settingsPanelRef = new SettingsPanel(mainMenuFrame, container, cardLayout, settingsManagerRef);
+            container.add(settingsPanelRef, "SETTINGS");
+        }
 
-        mainMenuFrame.setContentPane(settingsPanel);
-        mainMenuFrame.revalidate();
+        cardLayout.show(container, "SETTINGS");
     }
 
     private void openDrawing() {
@@ -112,7 +132,26 @@ public class MainMenu { // klasa głównego menu aplikacji
             }
         }
 
-        SimulationEngine engine          = new SimulationEngine(1920, 1080, grid); // silnik fizyki
+        // Read settings
+        boolean showFragments = true;
+        String resolution = "1920x1080";
+        if (settingsManagerRef != null) {
+            showFragments = settingsManagerRef.getStringSetting("fragments", "true").equals("true");
+            resolution = settingsManagerRef.getStringSetting("resolution", "1920x1080");
+        }
+
+        // apply window size from resolution setting (does not change engine internal resolution)
+        try {
+            String[] parts = resolution.split("x");
+            int winW = Integer.parseInt(parts[0]);
+            int winH = Integer.parseInt(parts[1]);
+            mainMenuFrame.setExtendedState(JFrame.NORMAL);
+            mainMenuFrame.setSize(winW, winH);
+            mainMenuFrame.setLocationRelativeTo(null);
+        } catch (Exception ignored) {
+        }
+
+        SimulationEngine engine          = new SimulationEngine(1920, 1080, grid, showFragments); // silnik fizyki
         SimulationPanel  simulationPanel  = new SimulationPanel(1920, 1080);        // ekran symulacji
         simulationPanel.setEngine(engine); // przekazanie silnika do panelu przez setter
         Renderer         renderer         = new Renderer(1920, 1080);               // zamienia grid[] na obrazek

@@ -9,7 +9,12 @@ public class SettingsPanel extends JPanel {
     private JComboBox<String> resolutionCombo;
     private JCheckBox fragmentsCheckBox;
 
-    public SettingsPanel(JFrame jFrame, JPanel mainMenuPanel, SettingsManager settingsManager) {
+    private final JPanel mainContainer;
+    private final CardLayout cardLayout;
+
+    public SettingsPanel(JFrame jFrame, JPanel mainContainer, CardLayout cardLayout, SettingsManager settingsManager) {
+        this.mainContainer = mainContainer;
+        this.cardLayout = cardLayout;
         setBackground(Color.BLACK);
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         backButton.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -23,7 +28,7 @@ public class SettingsPanel extends JPanel {
                 settingsManager.set("fragments", String.valueOf(fragmentsCheckBox.isSelected()))
         );
 
-        String[] resolutions = {"1920x1080", "1280x720", "960x540"};
+        String[] resolutions = {"1920x1080", "1280x720", "960x540", "1080x1080","720x720","540x540"};
         resolutionCombo = new JComboBox<>(resolutions);
         resolutionCombo.setSelectedItem(settingsManager.getStringSetting("resolution", "1920x1080"));
         resolutionCombo.setMaximumSize(new Dimension(200, 30));
@@ -33,9 +38,19 @@ public class SettingsPanel extends JPanel {
         );
 
         backButton.addActionListener(e -> {
-            jFrame.setContentPane(mainMenuPanel);
-            jFrame.revalidate();
             settingsManager.save();
+            // apply resolution immediately after saving
+            try {
+                String resolution = settingsManager.getStringSetting("resolution", "1920x1080");
+                String[] parts = resolution.split("x");
+                int winW = Integer.parseInt(parts[0]);
+                int winH = Integer.parseInt(parts[1]);
+                jFrame.setSize(winW, winH);
+                jFrame.setLocationRelativeTo(null);
+            } catch (Exception ignored) {
+            }
+            cardLayout.show(mainContainer, "MENU");
+            jFrame.revalidate();
         });
 
         Dimension gap = new Dimension(0, 15);
