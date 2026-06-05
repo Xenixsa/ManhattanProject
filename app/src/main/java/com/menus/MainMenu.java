@@ -1,5 +1,7 @@
 package com.menus;
 
+import com.settings.SettingsManager;
+import com.settings.SettingsPanel;
 import com.simulationthings.Renderer;
 import com.demopanel.PaintingPanel;
 import com.simulationthings.SimulationEngine;
@@ -21,10 +23,10 @@ public class MainMenu { // klasa głównego menu aplikacji
     JFrame mainMenuFrame = new JFrame();
     CardLayout cardLayout = new CardLayout(); // przełącza widoczny panel
     JPanel container = new JPanel(cardLayout); // kontener trzymający wszystkie karty (MENU, DRAWING, SIMULATION)
+    JPanel menuPanel = new JPanel(); // panel ekranu startowego z przyciskami
 
     public MainMenu() { // konstruktor - buduje i wyświetla menu
 
-        JPanel menuPanel = new JPanel(); // panel ekranu startowego z przyciskami
         JButton startbutton = new JButton("Start"); // otwiera panel rysowania atomów
         JButton settingsbutton = new JButton("Settings"); // TODO: ustawienia symulacji
         JButton exitbutton = new JButton("Exit"); // zamyka aplikację
@@ -58,8 +60,16 @@ public class MainMenu { // klasa głównego menu aplikacji
         mainMenuFrame.setVisible(true);
 
         startbutton.addActionListener(e -> openDrawing());
-        settingsbutton.addActionListener(e -> System.out.println("Settings - TODO"));
+        settingsbutton.addActionListener(e -> openSettingsPanel());
         exitbutton.addActionListener(e -> System.exit(0));
+    }
+
+    private void openSettingsPanel(){
+        SettingsManager settingsManager = new SettingsManager();
+        SettingsPanel settingsPanel = new SettingsPanel(mainMenuFrame,menuPanel,settingsManager);
+
+        mainMenuFrame.setContentPane(settingsPanel);
+        mainMenuFrame.revalidate();
     }
 
     private void openDrawing() {
