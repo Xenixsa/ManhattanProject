@@ -53,12 +53,8 @@ public class MainMenu { // klasa głównego menu aplikacji
         container.add(menuPanel, "MENU"); // rejestrujemy panel menu jako pierwszą kartę
 
         mainMenuFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        //Dimension mainMenuDimension = new Dimension(800, 600);
-        //mainMenuFrame.setSize(mainMenuDimension);
         mainMenuFrame.setTitle("Manhattan");
         mainMenuFrame.setResizable(true); // pozwala na zmianę rozmiaru, aby system mógł poprawnie zmaksymalizować okno
-        //mainMenuFrame.setLocationRelativeTo(null); // wyśrodkowanie na ekranie - tylko raz przy starcie
-        //mainMenuFrame.setResizable(false);
         mainMenuFrame.add(container); // do okna trafia kontener, nie bezpośrednio panel
         mainMenuFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         mainMenuFrame.setVisible(true);
@@ -91,7 +87,6 @@ public class MainMenu { // klasa głównego menu aplikacji
 
         container.add(drawingPanel, "DRAWING"); // rejestrujemy jako kartę
         cardLayout.show(container, "DRAWING"); // przełączamy na ekran rysowania
-        //mainMenuFrame.pack(); // rozszerza okno do rozmiaru PaintingPanel
         mainMenuFrame.setTitle("Narysuj atomy uranu"); // aktualizujemy tytuł okna
     }
 
@@ -122,6 +117,17 @@ public class MainMenu { // klasa głównego menu aplikacji
         simulationPanel.setEngine(engine); // przekazanie silnika do panelu przez setter
         Renderer         renderer         = new Renderer(1920, 1080);               // zamienia grid[] na obrazek
 
+
+        JLabel fpsLabel = new JLabel("FPS: --");
+        fpsLabel.setForeground(Color.WHITE);
+
+
+        // tablice jednoelementowe, bo lambda może modyfikować tylko zmienne "efektywnie final"
+        // (zwykłego int-a wewnątrz lambdy nie można zmieniać - kompilator krzyczy
+        long[] lastTime = { System.nanoTime() };
+        int[] frameCount = { 0 };
+
+
         // Lambda wywoływana co klatkę przez SimulationThread:
         // renderuje stan silnika -> przekazuje obrazek do panelu -> odświeża ekran
         SimulationThread simulationThread = new SimulationThread(
@@ -130,6 +136,17 @@ public class MainMenu { // klasa głównego menu aplikacji
                     BufferedImage frame = renderer.render(engine.getGrid(), engine.getParticles()); // renderuje nową klatkę
                     simulationPanel.setImage(frame); // przekazuje obrazek do panelu
                     simulationPanel.repaint(); // mówi Swingowi, żeby odświeżył ekran
+
+                    // aktualizujemy licznik FPS co 30 klatek, żeby nie migotał
+                    frameCount[0]++;
+                    if (frameCount[0] >= 30) {
+                        long now = System.nanoTime();
+                        // 30 klatek * 1_000_000_000 ns/s podzielone przez czas jaki minął
+                        double fps = 30_000_000_000.0 / (now - lastTime[0]);
+                        fpsLabel.setText(String.format("FPS: %.0f", fps));
+                        lastTime[0] = now;
+                        frameCount[0] = 0;
+                    }
                 }
         );
 
@@ -152,6 +169,7 @@ public class MainMenu { // klasa głównego menu aplikacji
         controlPanel.setBackground(Color.DARK_GRAY);
         controlPanel.add(pauseButton);
         controlPanel.add(rewindButton);
+        controlPanel.add(fpsLabel);
 
         JPanel simulationWrapper = new JPanel(new BorderLayout());
         simulationWrapper.add(simulationPanel, BorderLayout.CENTER);

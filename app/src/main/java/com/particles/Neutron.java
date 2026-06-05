@@ -10,9 +10,6 @@ public class Neutron extends Particle {
 
     public int r = 2; // promień kulki w pikselach
 
-    public double getDx() { return dx; }
-    public double getDy() { return dy; }
-
 
     public Neutron(double x, double y, double dx, double dy){
         super(x, y);
@@ -24,7 +21,6 @@ public class Neutron extends Particle {
         setX(getX() + dx);
         setY(getY() + dy);
 
-        int r = 2;
         // odbicie od lewej i prawej ściany
         if (getX() < r) { // jeśli wyleciał za ścianę
             setX(r); // cofa do krawędzi
@@ -43,6 +39,10 @@ public class Neutron extends Particle {
             dy = -dy;
         }
 
+    }
+    @Override
+    public void update(int width, int height) {
+        move(width, height);
     }
 
     @Override
@@ -74,8 +74,9 @@ public class Neutron extends Particle {
     @Override
     public String getInfo() {
         // String.format("%.2f") zaokrągla do 2 miejsc po przecinku - ładniejszy wynik niż surowy double
-        return String.format("Neutron\nPrędkość: (%.2f, %.2f)\nStan: %s",
-                dx, dy, onBoard ? "aktywny" : "niekatywny");
+        double speed = Math.hypot(dx, dy);
+        return String.format("Neutron\nPrędkość: %.2f px/klatę\nStan: %s",
+                speed,
+                onBoard ? "aktywny" : "nieaktywny");
     }
-
 }

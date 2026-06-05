@@ -16,12 +16,12 @@ public class SimulationEngine {
     private int aimStartX, aimStartY; // współrzędne punktu kliknięcia myszy
     private int aimCurrentX, aimCurrentY; // współrzędne aktualnej pozycji myszy podczas przeciągania
 
-    private int neutronLimit = 10000000;
-    private double neutronCollisionRadius = 2.0;
+    private int neutronLimit = 10000;
     private int width;
     private int height;
     private int[] grid;
-//    private List<Neutron> neutrons;
+
+    private int framesSinceLastSave = 0; // licznik klatek od ostatniego zapisu historii
     private Random random = new Random();
 
     private List<Particle> particles = new ArrayList<>();
@@ -35,7 +35,6 @@ public class SimulationEngine {
         this.width = width;
         this.height = height;
         this.grid = grid;
-//        this.neutrons = new ArrayList<>();
         this.particles = new ArrayList<>();
     }
 
@@ -50,11 +49,16 @@ public class SimulationEngine {
 
     public void addNeutron(double x, double y, double dx, double dy){
         started = true;
-        particles.add(new Neutron(x, y, dx, dy)); // ← particles zamiast neutrons
+        particles.add(new Neutron(x, y, dx, dy));
     }
 
     private void spawnNeutrons(int x, int y) {
-        if (particles.size() + pendingNeutrons.size() < neutronLimit) {
+        // liczymy tylko neutrony, bo fragmenty nie napędzają reakcji i nie powinny blokować limitu
+        long neutronCount = particles.stream()
+                .filter(p -> p instanceof Neutron)
+                .count();
+
+        if (neutronCount < neutronLimit) {
             for (int i = 0; i < 3; i++) {
                 double angle = random.nextDouble() * 2 * Math.PI;
                 double speed = 2.0;
@@ -62,10 +66,6 @@ public class SimulationEngine {
                         Math.cos(angle) * speed, Math.sin(angle) * speed));
             }
         }
-    }
-
-    private void checkCollisions(){
-
     }
 
     public List<Particle> getParticles() {
@@ -99,10 +99,15 @@ public class SimulationEngine {
 
         if (paused) return; // przy pauzie nie liczymy fizyki i nie zapisujemy klatek
 
-        history.save(save()); // zapamiętujemy stan SPRZED tego kroku, żeby móc się cofnąć
+        framesSinceLastSave++;
+        if (framesSinceLastSave >= 3) {
+            history.save(save());
+            framesSinceLastSave = 0;
+        }
+        //history.save(save()); // zapamiętujemy stan SPRZED tego kroku, żeby móc się cofnąć
 
         pendingNeutrons.clear();
-
+        synchronized (particles){
         for (Particle p : particles) {
             if (p instanceof Neutron n) {
                 if (!n.isOnBoard()) continue;
@@ -129,13 +134,13 @@ public class SimulationEngine {
                 }
 
             } else if (p instanceof Fragments f) {
-                f.move(width, height); // odbija się od ścian, brak innych interakcji
+                f.update(width, height); // odbija się od ścian, brak innych interakcji
             }
         }
 
         particles.removeIf(p -> (p instanceof Neutron n && !n.isOnBoard()) || (p instanceof Fragments f && !f.isAlive()));
         particles.addAll(pendingNeutrons);
-    }
+    }}
 
     private void spawnFragments(int x, int y) {
         // dwa fragmenty w przeciwnych kierunkach
@@ -157,28 +162,7 @@ public class SimulationEngine {
         }
         return true; // wszystkie żółte zniszczone
     }
-//    public boolean isFinished() {
-//        if (!started){
-//            return false;
-//        }
-//        for (Particle p: particles){
-//            if (p instanceof Neutron n && n.isOnBoard()){
-//                return false;
-//            }
-//        }
-//        return true;
-////        if (!started) return false; // symulacja nie zakończona, jeśli jeszcze nie zaczęta
-////        for (Neutron n : neutrons) {
-////            if (n.isOnBoard()) {
-////                return false;
-////            }
-////        }
-////        return true; // na razie nigdy nie kończy
-//    }
 
-//    public List<Neutron> getNeutrons() {
-//        return neutrons;
-//    }
 
     // Metoda pozwalająca z zewnątrz zaktualizować cały stan celowania w silniku za jednym razem
     public void setAimState(boolean isAiming, int startX, int startY, int currentX, int currentY) {
