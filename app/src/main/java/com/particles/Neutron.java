@@ -21,9 +21,14 @@ public class Neutron extends Particle {
         this.onBoard = true;
     }
     public void move(int width, int height){
+        move(width, height, true);
+    }
+
+    public void move(int width, int height, boolean wallCollisions){
         setX(getX() + dx);
         setY(getY() + dy);
 
+<<<<<<< Updated upstream
         int r = 2;
         // odbicie od lewej i prawej ściany
         if (getX() < r) { // jeśli wyleciał za ścianę
@@ -33,14 +38,30 @@ public class Neutron extends Particle {
             setX(width - r - 1); // cofnij go do krawędzi
             dx = -dx; // odwróć kierunek poziomy
         }
+=======
+        if (wallCollisions) {
+            // odbicie od lewej i prawej ściany
+            if (getX() < r) { // jeśli wyleciał za ścianę
+                setX(r); // cofa do krawędzi
+                dx = -dx; // odwraca kierunek poziomy
+            } else if (getX() >= width - r) { // wyleciał za prawą ścianę
+                setX(width - r - 1); // cofnij go do krawędzi
+                dx = -dx; // odwróć kierunek poziomy
+            }
+>>>>>>> Stashed changes
 
-        // odbicie od górnej i dolnej ściany
-        if (getY() < r) {
-            setY(r);
-            dy = -dy;
-        } else if (getY() >= height - r) {
-            setY(height - r - 1);
-            dy = -dy;
+            // odbicie od górnej i dolnej ściany
+            if (getY() < r) {
+                setY(r);
+                dy = -dy;
+            } else if (getY() >= height - r) {
+                setY(height - r - 1);
+                dy = -dy;
+            }
+        } else {
+            if (getX() < 0 || getX() >= width || getY() < 0 || getY() >= height) {
+                deactivate();
+            }
         }
 
     }

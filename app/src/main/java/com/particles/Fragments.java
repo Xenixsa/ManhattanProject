@@ -28,15 +28,21 @@ public class Fragments extends Particle {
     }
 
     public void move(int width, int height) {
+        move(width, height, true);
+    }
+
+    public void move(int width, int height, boolean wallCollisions) {
         ticksAlive++;
         setX(getX() + dx);
         setY(getY() + dy);
 
-        if (getX() < R) { setX(R); dx = -dx; }
-        else if (getX() >= width - R) { setX(width - R - 1); dx = -dx; }
+        if (wallCollisions) {
+            if (getX() < R) { setX(R); dx = -dx; }
+            else if (getX() >= width - R) { setX(width - R - 1); dx = -dx; }
 
-        if (getY() < R) { setY(R); dy = -dy; }
-        else if (getY() >= height - R) { setY(height - R - 1); dy = -dy; }
+            if (getY() < R) { setY(R); dy = -dy; }
+            else if (getY() >= height - R) { setY(height - R - 1); dy = -dy; }
+        }
     }
 
     public boolean isAlive(){

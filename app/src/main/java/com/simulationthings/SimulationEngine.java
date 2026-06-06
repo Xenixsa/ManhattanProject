@@ -13,12 +13,23 @@ public class SimulationEngine {
     private int aimStartX, aimStartY; // współrzędne punktu kliknięcia myszy
     private int aimCurrentX, aimCurrentY; // współrzędne aktualnej pozycji myszy podczas przeciągania
 
+<<<<<<< Updated upstream
     private int neutronLimit = 10000;
     // private double neutronCollisionRadius = 2.0;
     private int width;
     private int height;
     private int[] grid;
 //    private List<Neutron> neutrons;
+=======
+    private int neutronLimit = 10000000;
+    private int width;
+    private int height;
+    private int[] grid;
+    private final boolean showFragments;
+    private final boolean wallCollisions;
+
+    private int framesSinceLastSave = 0; // licznik klatek od ostatniego zapisu historii
+>>>>>>> Stashed changes
     private Random random = new Random();
 
     private List<Particle> particles = new ArrayList<>();
@@ -28,12 +39,21 @@ public class SimulationEngine {
     private volatile boolean paused = false; // volatile - czyta wątek symulacji, ustawia wątek UI
     private boolean gridShared = false; // true = aktualny grid trzyma już jakąś pamiątkę
 
+<<<<<<< Updated upstream
     public SimulationEngine(int width, int height, int[] grid){
+=======
+    public SimulationEngine(int width, int height, int[] grid, boolean showFragments, boolean wallCollisions){
+>>>>>>> Stashed changes
         this.width = width;
         this.height = height;
         this.grid = grid;
 //        this.neutrons = new ArrayList<>();
         this.particles = new ArrayList<>();
+<<<<<<< Updated upstream
+=======
+        this.showFragments = showFragments;
+        this.wallCollisions = wallCollisions;
+>>>>>>> Stashed changes
     }
 
     public void fireNeutron(int startX, int startY, int releaseX, int releaseY){
@@ -103,7 +123,7 @@ public class SimulationEngine {
         for (Particle p : particles) {
             if (p instanceof Neutron n) {
                 if (!n.isOnBoard()) continue;
-                n.move(width, height);
+                n.move(width, height, wallCollisions);
                 if (!n.isOnBoard()) continue;
 
                 int index = n.getPixelY() * width + n.getPixelX();
@@ -126,7 +146,11 @@ public class SimulationEngine {
                 }
 
             } else if (p instanceof Fragments f) {
+<<<<<<< Updated upstream
                 f.move(width, height); // odbija się od ścian, brak innych interakcji
+=======
+                f.move(width, height, wallCollisions); // odbija się od ścian tylko jeśli włączone
+>>>>>>> Stashed changes
             }
         }
 
@@ -235,5 +259,18 @@ public class SimulationEngine {
     public void rewind() {
         SimulationMemento previous = history.undo();
         if (previous != null) restore(previous);
+    }
+
+    // Resetuje historię symulacji - usuwa wszystkie zapisane snapshoty.
+    // Wywołuj gdy symulacja się kończy lub użytkownik wraca do menu.
+    // Cycle buffer automatycznie nadpisze stare wpisy, ale wywołanie tego
+    // wyraźnie zeruje pamięć dla następnej symulacji.
+    public void resetHistory() {
+        history.clear();
+    }
+
+    // Getter do monitorowania rozmiaru historii (liczba zapisanych snapshotów)
+    public int getHistorySize() {
+        return history.size();
     }
 }
