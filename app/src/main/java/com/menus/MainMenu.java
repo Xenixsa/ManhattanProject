@@ -191,23 +191,34 @@ public class MainMenu { // klasa głównego menu aplikacji
 
         // Przyciski sterowania
         JButton pauseButton = new JButton("Pauza [Spacja]");
+
         JButton rewindButton = new JButton("Cofnij [<-]");
         rewindButton.setEnabled(false); // aktywny dopiero po wstrzymaniu symulacji
+
+        JButton forwardButton = new JButton("Do przodu [->]");
+        forwardButton.setEnabled(false); // aktywny dopiero po wstrzymaniu symulacji
+
 
         pauseButton.addActionListener(e -> {
             engine.togglePause();
             pauseButton.setText(engine.isPaused() ? "Wznów [Spacja]" : "Pauza [Spacja]");
             rewindButton.setEnabled(engine.isPaused());
+            forwardButton.setEnabled(engine.isPaused());
         });
 
         rewindButton.addActionListener(e -> {
             if (engine.isPaused()) engine.rewind();
         });
 
+        forwardButton.addActionListener(e -> {
+            if (engine.isPaused()) engine.forward();
+        });
+
         JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 6));
         controlPanel.setBackground(Color.DARK_GRAY);
         controlPanel.add(pauseButton);
         controlPanel.add(rewindButton);
+        controlPanel.add(forwardButton);
         controlPanel.add(fpsLabel);
 
         JPanel simulationWrapper = new JPanel(new BorderLayout());
@@ -230,11 +241,21 @@ public class MainMenu { // klasa głównego menu aplikacji
             }
         });
 
+
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0), "rewind");
         actionMap.put("rewind", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (engine.isPaused()) rewindButton.doClick();
+            }
+        });
+
+
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0), "forward");
+        actionMap.put("forward", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (engine.isPaused()) forwardButton.doClick();
             }
         });
 
