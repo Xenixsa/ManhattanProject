@@ -17,13 +17,16 @@ public class Fragments extends Particle {
             new Color(80, 180, 255),  // niebieski
     };
 
+    private final String name; // nazwa izotopu zależna od koloru
     private static int colorIndex = 0;
 
     public Fragments(double x, double y, double dx, double dy) {
         super(x, y);
         this.dx = dx;
         this.dy = dy;
-        this.color = COLORS[colorIndex % COLORS.length];
+        int index = colorIndex % COLORS.length;
+        this.color = COLORS[index];
+        this.name = index == 0 ? "Bar-144" : "Krypton-89"; // czerwony = Bar, niebieski = Krypton
         colorIndex++;
     }
 
@@ -50,6 +53,7 @@ public class Fragments extends Particle {
         this.dx = original.dx;
         this.dy = original.dy;
         this.color = original.color;
+        this.name = original.name;
         this.ageSeconds = original.ageSeconds; // inaczej kopia żyłaby od nowa 5 sekund
     }
 
@@ -69,7 +73,7 @@ public class Fragments extends Particle {
 
         double speed = Math.hypot(dx, dy); // długość wektora prędkości, jak szybko leci cząstka
         double secondsLeft = LIFETIME_SECONDS - ageSeconds;
-        return String.format("Fragment\nPrędkość: %.2f px/s\nPozostało: %.1f s",
-        speed, secondsLeft);
+        return String.format("%s\nPrędkość: %.2f px/s\nPozostało: %.1f s",
+        name, speed, secondsLeft);
     }
 }
