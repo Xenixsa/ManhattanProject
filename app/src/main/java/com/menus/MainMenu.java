@@ -24,10 +24,14 @@ public class MainMenu { // klasa głównego menu aplikacji
     CardLayout cardLayout = new CardLayout(); // przełącza widoczny panel
     JPanel container = new JPanel(cardLayout); // kontener trzymający wszystkie karty (MENU, DRAWING, SIMULATION)
     JPanel menuPanel = new JPanel(); // panel ekranu startowego z przyciskami
+
     private SettingsPanel settingsPanelRef = null;
     private SettingsManager settingsManagerRef = null;
-    private int configWindowWidth = 1920;
-    private int configWindowHeight = 1080;
+    private static final int DEFAULT_WIDTH = 1280;
+    private static final int DEFAULT_HEIGHT = 720;
+    private Rectangle normalBounds = new Rectangle(100, 100, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+
+
 
     public MainMenu() { // konstruktor - buduje i wyświetla menu
 
@@ -59,28 +63,71 @@ public class MainMenu { // klasa głównego menu aplikacji
 
         container.add(menuPanel, "MENU"); // rejestrujemy panel menu jako pierwszą kartę
 
-        // Apply configured resolution for main menu and panels
-        try {
-            String resolution = settingsManagerRef.getStringSetting("resolution", "1920x1080");
-            String[] parts = resolution.split("x");
-            configWindowWidth = Integer.parseInt(parts[0]);
-            configWindowHeight = Integer.parseInt(parts[1]);
-            menuPanel.setPreferredSize(new Dimension(configWindowWidth, configWindowHeight));
-            mainMenuFrame.setSize(configWindowWidth, configWindowHeight);
-            mainMenuFrame.setLocationRelativeTo(null);
-        } catch (Exception ignored) {
-        }
 
         mainMenuFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mainMenuFrame.setTitle("Manhattan");
         mainMenuFrame.setResizable(true); // pozwala na zmianę rozmiaru, aby system mógł poprawnie zmaksymalizować okno
         mainMenuFrame.add(container); // do okna trafia kontener, nie bezpośrednio panel
+        restoreWindowState(); // przywracamy pozycję i rozmiar z poprzedniej sesji
         mainMenuFrame.setVisible(true);
+
+
+
+        // aktualizujemy normalBounds przy każdym ruchu lub zmianie rozmiaru okna,
+        // żeby mieć zawsze aktualne wymiary niezależnie od stanu przy zamknięciu
+        mainMenuFrame.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                normalBounds = mainMenuFrame.getBounds();
+            }
+            @Override
+            public void componentMoved(java.awt.event.ComponentEvent e) {
+                normalBounds = mainMenuFrame.getBounds();
+            }
+        });
+
+
+        // zapis pozycji okna tuż przed zakończeniem programu - niezależnie od sposobu wyjścia
+        Runtime.getRuntime().addShutdownHook(new Thread(this::saveWindowState));
+
 
         startbutton.addActionListener(e -> openDrawing());
         settingsbutton.addActionListener(e -> openSettingsPanel());
         exitbutton.addActionListener(e -> System.exit(0));
     }
+
+    // Zapisuje pozycję, rozmiar i stan ona do ustawień.
+    // Przy zmaksymalizowanym oknie pobieramy wymiary przed maksymalizacją (normalBounds),
+    // żeby przy przywróceniu nie zapisać rozmiaru pełnego ekranu.
+    private void saveWindowState() {
+        settingsManagerRef.set("windowX", String.valueOf(normalBounds.x));
+        settingsManagerRef.set("windowY", String.valueOf(normalBounds.y));
+        settingsManagerRef.set("windowWidth", String.valueOf(normalBounds.width));
+        settingsManagerRef.set("windowHeight", String.valueOf(normalBounds.height));
+        settingsManagerRef.save();
+    }
+
+
+    // Przywraca pozycję i rozmiar okna z poprzedniej sesji.
+    // Przy pierwszym uruchomieniu (brak zapisanych wartości) maksymalizuje okno.
+    private void restoreWindowState() {
+        int x = settingsManagerRef.getIntSetting("windowX", Integer.MAX_VALUE);
+        int y = settingsManagerRef.getIntSetting("windowY", Integer.MAX_VALUE);
+        int width = settingsManagerRef.getIntSetting("windowWidth", -1);
+        int height = settingsManagerRef.getIntSetting("windowHeight", -1);
+
+        if (width <= 0 || height <= 0) {
+            // pierwsze uruchomienie - okno na cały główny ekran
+            Rectangle screen = GraphicsEnvironment.getLocalGraphicsEnvironment()
+                    .getDefaultScreenDevice().getDefaultConfiguration().getBounds();
+            normalBounds = screen;
+        } else  {
+            normalBounds = new Rectangle(x, y, width, height);
+        }
+        mainMenuFrame.setBounds(normalBounds);
+    }
+
+
 
     private void openSettingsPanel(){
         if (settingsManagerRef == null) settingsManagerRef = new SettingsManager();
@@ -134,22 +181,10 @@ public class MainMenu { // klasa głównego menu aplikacji
 
         // Read settings
         boolean showFragments = true;
-        String resolution = "1920x1080";
         if (settingsManagerRef != null) {
             showFragments = settingsManagerRef.getStringSetting("fragments", "true").equals("true");
-            resolution = settingsManagerRef.getStringSetting("resolution", "1920x1080");
         }
 
-        // apply window size from resolution setting (does not change engine internal resolution)
-        try {
-            String[] parts = resolution.split("x");
-            int winW = Integer.parseInt(parts[0]);
-            int winH = Integer.parseInt(parts[1]);
-            mainMenuFrame.setExtendedState(JFrame.NORMAL);
-            mainMenuFrame.setSize(winW, winH);
-            mainMenuFrame.setLocationRelativeTo(null);
-        } catch (Exception ignored) {
-        }
 
         SimulationEngine engine          = new SimulationEngine(1920, 1080, grid, showFragments); // silnik fizyki
         SimulationPanel  simulationPanel  = new SimulationPanel(1920, 1080);        // ekran symulacji
@@ -273,7 +308,7 @@ public class MainMenu { // klasa głównego menu aplikacji
             @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
                 simulationThread.stopSimulation(); // zatrzymujemy wątek przed zamknięciem
-                mainMenuFrame.dispose();
+                System.exit(0);
             }
         });
 
