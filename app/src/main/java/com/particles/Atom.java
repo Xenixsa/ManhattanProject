@@ -17,16 +17,20 @@ public class Atom extends Particle {
     public void split() {
         this.split = true;
     }
+
+
     @Override
-    public void update(int width, int height) {
-        //na razie puste
+    public void update(int width, int height, double deltaTime) {
+        // atomy się nie ruszają - są nieruchomym celem
     }
+
     @Override
     public Atom copy() {
         Atom copy = new Atom(getX(), getY());
         if (isSplit()) copy.split(); // zachowujemy stan rozszczepienia
         return copy;
     }
+
 
     public void drawSelf(Graphics2D g2d){
         g2d.setColor(Color.YELLOW);

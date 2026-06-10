@@ -9,8 +9,8 @@ public class Fragments extends Particle {
     private final Color color;
     public static final int R = 4; // dwukrotnie większy od neutronu (r=2)
 
-    private int ticksAlive = 0;
-    private static final int LIFETIME_TICKS = 5 * 60;
+    private double ageSeconds = 0.0;
+    private static final double LIFETIME_SECONDS = 5.0;
 
     private static final Color[] COLORS = {
             new Color(255, 80, 80),   // czerwony
@@ -27,10 +27,10 @@ public class Fragments extends Particle {
         colorIndex++;
     }
 
-    public void move(int width, int height) {
-        ticksAlive++;
-        setX(getX() + dx);
-        setY(getY() + dy);
+    public void update(int width, int height, double deltaTime) {
+        ageSeconds += deltaTime; // starszejemy się o realny czas, nie o "jedną klatkę"
+        setX(getX() + dx * deltaTime);
+        setY(getY() + dy * deltaTime);
 
         if (getX() < R) { setX(R); dx = -dx; }
         else if (getX() >= width - R) { setX(width - R - 1); dx = -dx; }
@@ -38,12 +38,9 @@ public class Fragments extends Particle {
         if (getY() < R) { setY(R); dy = -dy; }
         else if (getY() >= height - R) { setY(height - R - 1); dy = -dy; }
     }
-    @Override
-    public void update(int width, int height) {
-        move(width, height);
-    }
-    public boolean isAlive(){
-        return ticksAlive < LIFETIME_TICKS;
+
+    public boolean isAlive() {
+        return ageSeconds < LIFETIME_SECONDS;
     }
 
     // Prywatny konstruktor kopiujący - używamy wyłącznie przez copy().
@@ -53,7 +50,7 @@ public class Fragments extends Particle {
         this.dx = original.dx;
         this.dy = original.dy;
         this.color = original.color;
-        this.ticksAlive = original.ticksAlive; // inaczej kopia żyłaby od nowa 5 sekund
+        this.ageSeconds = original.ageSeconds; // inaczej kopia żyłaby od nowa 5 sekund
     }
 
     @Override
@@ -69,11 +66,10 @@ public class Fragments extends Particle {
 
     @Override
     public String getInfo() {
-        int ticksLeft = LIFETIME_TICKS - ticksAlive;
-        // dzielimy przez 60 bo tyle ticków mija na sekundę (przy 60 FPS)
+
         double speed = Math.hypot(dx, dy); // długość wektora prędkości, jak szybko leci cząstka
-        return String.format("Fragment\nPrędkość: %.2f px/klatkę\nPozostało: %.1f s",
-        speed,
-        ticksLeft / 60.0);
+        double secondsLeft = LIFETIME_SECONDS - ageSeconds;
+        return String.format("Fragment\nPrędkość: %.2f px/s\nPozostało: %.1f s",
+        speed, secondsLeft);
     }
 }

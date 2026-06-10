@@ -17,9 +17,9 @@ public class Neutron extends Particle {
         this.dx = dx;
         this.onBoard = true;
     }
-    public void move(int width, int height){
-        setX(getX() + dx);
-        setY(getY() + dy);
+    public void update(int width, int height, double deltaTime){
+        setX(getX() + dx * deltaTime);
+        setY(getY() + dy * deltaTime);
 
         // odbicie od lewej i prawej ściany
         if (getX() < r) { // jeśli wyleciał za ścianę
@@ -39,10 +39,6 @@ public class Neutron extends Particle {
             dy = -dy;
         }
 
-    }
-    @Override
-    public void update(int width, int height) {
-        move(width, height);
     }
 
     @Override
@@ -75,7 +71,7 @@ public class Neutron extends Particle {
     public String getInfo() {
         // String.format("%.2f") zaokrągla do 2 miejsc po przecinku - ładniejszy wynik niż surowy double
         double speed = Math.hypot(dx, dy);
-        return String.format("Neutron\nPrędkość: %.2f px/klatę\nStan: %s",
+        return String.format("Neutron\nPrędkość: %.2f px/s\nStan: %s",
                 speed,
                 onBoard ? "aktywny" : "nieaktywny");
     }
