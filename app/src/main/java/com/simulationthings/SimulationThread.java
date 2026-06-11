@@ -1,5 +1,7 @@
 package com.simulationthings;
 
+import javax.swing.*;
+
 public class SimulationThread extends Thread {
 
     private final SimulationEngine engine; // silnik symulacji - liczy fizykę co klatkę
@@ -59,6 +61,16 @@ public class SimulationThread extends Thread {
                 Thread.currentThread().interrupt(); // przywraca flagę przerwania
                 break; // wychodzi z pętli
             }
+        }//powiadomienie o końcu symulacji
+        if (engine.isFinished()) {
+            SwingUtilities.invokeLater(() ->
+                    JOptionPane.showMessageDialog(
+                            null,
+                            "Reakcja łańcuchowa zakończona!\nWszystkie atomy uranu zostały rozszczepione.",
+                            "Koniec symulacji",
+                            JOptionPane.INFORMATION_MESSAGE
+                    )
+            );
         }
     }
 
