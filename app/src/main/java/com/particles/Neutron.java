@@ -10,35 +10,48 @@ public class Neutron extends Particle {
 
     public int r = 2; // promień kulki w pikselach
 
+    private final boolean bounceOffWalls; // czy neutron odbija się od ścian
 
-    public Neutron(double x, double y, double dx, double dy){
+
+    public Neutron(double x, double y, double dx, double dy, boolean bounceOffWalls){
         super(x, y);
         this.dy = dy;
         this.dx = dx;
         this.onBoard = true;
+        this.bounceOffWalls = bounceOffWalls;
     }
     public void update(int width, int height, double deltaTime){
+
         setX(getX() + dx * deltaTime);
         setY(getY() + dy * deltaTime);
 
-        // odbicie od lewej i prawej ściany
-        if (getX() < r) { // jeśli wyleciał za ścianę
-            setX(r); // cofa do krawędzi
-            dx = -dx; // odwraca kierunek poziomy
-        } else if (getX() >= width - r) { // wyleciał za prawą ścianę
-            setX(width - r - 1); // cofnij go do krawędzi
-            dx = -dx; // odwróć kierunek poziomy
-        }
+        if (bounceOffWalls) {
 
-        // odbicie od górnej i dolnej ściany
-        if (getY() < r) {
-            setY(r);
-            dy = -dy;
-        } else if (getY() >= height - r) {
-            setY(height - r - 1);
-            dy = -dy;
-        }
+            // odbicie od lewej i prawej ściany
+            if (getX() < r) { // jeśli wyleciał za ścianę
+                setX(r); // cofa do krawędzi
+                dx = -dx; // odwraca kierunek poziomy
+            } else if (getX() >= width - r) { // wyleciał za prawą ścianę
+                setX(width - r - 1); // cofnij go do krawędzi
+                dx = -dx; // odwróć kierunek poziomy
+            }
 
+            // odbicie od górnej i dolnej ściany
+            if (getY() < r) {
+                setY(r);
+                dy = -dy;
+            } else if (getY() >= height - r) {
+                setY(height - r - 1);
+                dy = -dy;
+            }
+
+        } else {
+
+            // tryb alternatywny - neutron wylatuje poza planszę i dezaktywuje się
+            if (getX() < 0 || getX() >= width || getY() < 0 || getY() >= height) {
+                deactivate();
+            }
+        }
     }
 
     @Override
@@ -62,7 +75,7 @@ public class Neutron extends Particle {
 
     @Override
     public Neutron copy() {
-        Neutron copy = new Neutron(getX(), getY(), dx, dy); // ta sama pozycja i prędkość
+        Neutron copy = new Neutron(getX(), getY(), dx, dy, bounceOffWalls); // ta sama pozycja i prędkość
         if (!onBoard) copy.deactivate(); // zachowujemy stan aktywności
         return copy;
     }

@@ -135,6 +135,8 @@ public class MainMenu { // klasa głównego menu aplikacji
         }
 
         cardLayout.show(container, "SETTINGS");
+        settingsPanelRef.revalidate();
+        settingsPanelRef.repaint();
     }
 
     private void openDrawing() {
@@ -178,13 +180,13 @@ public class MainMenu { // klasa głównego menu aplikacji
         }
 
         // Read settings
-        boolean showFragments = true;
-        if (settingsManagerRef != null) {
-            showFragments = settingsManagerRef.getStringSetting("fragments", "true").equals("true");
-        }
+        boolean showFragments = settingsManagerRef.getStringSetting("fragments", "true").equals("true");
+        boolean exitOnNeutrons = (settingsPanelRef != null) && settingsPanelRef.isExitOnNeutrons();
+        System.out.println("exitOnNeutrons = " + exitOnNeutrons);
+        System.out.println("settingsPanelRef = " + settingsPanelRef);
 
 
-        SimulationEngine engine          = new SimulationEngine(1920, 1080, grid, showFragments); // silnik fizyki
+        SimulationEngine engine          = new SimulationEngine(1920, 1080, grid, showFragments, exitOnNeutrons); // silnik fizyki
         SimulationMemento initialState = engine.save(); // snapshot stanu przed jakimkolwiek neutronem
         SimulationPanel  simulationPanel  = new SimulationPanel(1920, 1080);        // ekran symulacji
         simulationPanel.setEngine(engine); // przekazanie silnika do panelu przez setter

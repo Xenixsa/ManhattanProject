@@ -8,6 +8,7 @@ public class SettingsPanel extends JPanel {
     private JButton backButton = new JButton("Back");
     private JComboBox<String> resolutionCombo;
     private JCheckBox fragmentsCheckBox;
+    private JCheckBox exitOnNeutronsCheckBox;
 
     private final JPanel mainContainer;
     private final CardLayout cardLayout;
@@ -28,6 +29,22 @@ public class SettingsPanel extends JPanel {
                 settingsManager.set("fragments", String.valueOf(fragmentsCheckBox.isSelected()))
         );
 
+        // opis trybu zakończenia - szary tekst nad checkboxem
+        JLabel exitModeLabel = new JLabel("<html><center>Domyślnie symulacja kończy się gdy<br>wszystkie atomy się rozszczepią.</center></html>");
+        exitModeLabel.setForeground(Color.GRAY);
+
+        JPanel exitModelLabelWrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        exitModelLabelWrapper.setBackground(Color.BLACK);
+        exitModelLabelWrapper.setAlignmentX(Component.CENTER_ALIGNMENT);
+        exitModelLabelWrapper.add(exitModeLabel);
+        exitModelLabelWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, exitModelLabelWrapper.getPreferredSize().height));
+
+        // checkbox trybu alternatywnego
+        exitOnNeutronsCheckBox = new JCheckBox("Zakończ gdy wszystkie neutrony wylecą poza planszę", false);
+        exitOnNeutronsCheckBox.setBackground(Color.BLACK);
+        exitOnNeutronsCheckBox.setForeground(Color.WHITE);
+        exitOnNeutronsCheckBox.setAlignmentX(Component.CENTER_ALIGNMENT);
+
         String[] resolutions = {"1920x1080", "1280x720", "960x540", "1080x1080","720x720","540x540"};
         resolutionCombo = new JComboBox<>(resolutions);
         resolutionCombo.setSelectedItem(settingsManager.getStringSetting("resolution", "1920x1080"));
@@ -39,18 +56,18 @@ public class SettingsPanel extends JPanel {
 
         backButton.addActionListener(e -> {
             settingsManager.save();
-            // apply resolution immediately after saving
+            // zmieniamy rozmiar okna zachowując jego aktualną pozycję
             try {
                 String resolution = settingsManager.getStringSetting("resolution", "1920x1080");
                 String[] parts = resolution.split("x");
                 int winW = Integer.parseInt(parts[0]);
                 int winH = Integer.parseInt(parts[1]);
+                Point location = jFrame.getLocation(); // zapamiętujemy aktualną pozycję
                 jFrame.setSize(winW, winH);
-                jFrame.setLocationRelativeTo(null);
-            } catch (Exception ignored) {
-            }
+                jFrame.setLocation(location); // przywracamy pozycję - okno nie skacze
+            } catch (Exception ignored) {}
+
             cardLayout.show(mainContainer, "MENU");
-            jFrame.revalidate();
         });
 
         Dimension gap = new Dimension(0, 15);
@@ -59,7 +76,15 @@ public class SettingsPanel extends JPanel {
         add(Box.createRigidArea(gap));
         add(fragmentsCheckBox);
         add(Box.createRigidArea(gap));
+        add(exitModelLabelWrapper);
+        add(Box.createRigidArea(new Dimension(0, 5)));
+        add(exitOnNeutronsCheckBox);
+        add(Box.createRigidArea(gap));
         add(backButton);
         add(Box.createVerticalGlue());
+    }
+
+    public boolean isExitOnNeutrons() {
+        return exitOnNeutronsCheckBox.isSelected();
     }
 }

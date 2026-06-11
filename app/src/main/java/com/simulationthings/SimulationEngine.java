@@ -24,6 +24,8 @@ public class SimulationEngine {
 
     public void unpause() { paused = false; }
 
+    private final boolean exitOnNeutrons; // tryb zakończenia - gdy neutrony opuszczą planszę
+
     private int framesSinceLastSave = 0; // licznik klatek od ostatniego zapisu historii
     private Random random = new Random();
 
@@ -34,12 +36,13 @@ public class SimulationEngine {
     private volatile boolean paused = false; // volatile - czyta wątek symulacji, ustawia wątek UI
     private boolean gridShared = false; // true = aktualny grid trzyma już jakąś pamiątkę
 
-    public SimulationEngine(int width, int height, int[] grid, boolean showFragments) {
+    public SimulationEngine(int width, int height, int[] grid, boolean showFragments, boolean exitOnNeutrons) {
         this.width = width;
         this.height = height;
         this.grid = grid;
         this.particles = new ArrayList<>();
         this.showFragments = showFragments;
+        this.exitOnNeutrons = exitOnNeutrons;
     }
 
     public void fireNeutron(int startX, int startY, int releaseX, int releaseY) {
@@ -53,7 +56,7 @@ public class SimulationEngine {
 
     public void addNeutron(double x, double y, double dx, double dy) {
         started = true;
-        particles.add(new Neutron(x, y, dx, dy));
+        particles.add(new Neutron(x, y, dx, dy, !exitOnNeutrons));
     }
 
     private void spawnNeutrons(int x, int y) {
@@ -67,7 +70,7 @@ public class SimulationEngine {
                 double angle = random.nextDouble() * 2 * Math.PI;
                 double speed = 120.0; // px/s (było 2.0 px/klatkę x 60)
                 pendingNeutrons.add(new Neutron(x, y,
-                        Math.cos(angle) * speed, Math.sin(angle) * speed));
+                        Math.cos(angle) * speed, Math.sin(angle) * speed, !exitOnNeutrons));
             }
         }
     }
@@ -169,6 +172,18 @@ public class SimulationEngine {
         }
 
         public boolean isFinished () {
+
+            if (exitOnNeutrons) {
+                // tryb alternatywny: kończymy, gdy gracz strzelił i nie ma już aktywnych neutronów
+                if (!started) return false; // nie kończymy, zanim gracz w ogóle strzelił
+                synchronized (particles) {
+                    return particles.stream().noneMatch(p -> p instanceof Neutron n && n.isOnBoard());
+                    // particles.stream() tworzy strumień ze wszystkich cząsteczek na planszy
+                    // .noneMatch() zwraca true, jeśli żadna cząsteczka nie spełnia warunku w środku
+                    // warunek: czy jest neutronem i jest na planszy
+                }
+
+            }
             for (int i = 0; i < grid.length; i++) {
                 if (grid[i] == 1) return false; // zostały jeszcze nierozszczepione atomy
             }
