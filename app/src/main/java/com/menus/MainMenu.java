@@ -154,7 +154,8 @@ public class MainMenu { // klasa głównego menu aplikacji
 
     private void startPythonPlotProcess(Path baseDir, String scriptName) throws IOException {
         Path scriptPath = baseDir.resolve(scriptName);
-        ProcessBuilder pb = new ProcessBuilder("python3", scriptPath.toString());
+        String python = System.getProperty("os.name").toLowerCase().contains("win") ? "python" : "python3";
+        ProcessBuilder pb = new ProcessBuilder(python, scriptPath.toString());
         pb.directory(baseDir.toFile());
         pb.redirectErrorStream(true);
         pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
