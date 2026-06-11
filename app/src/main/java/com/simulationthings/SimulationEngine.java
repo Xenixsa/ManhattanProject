@@ -22,6 +22,8 @@ public class SimulationEngine {
     private int[] grid;
     private final boolean showFragments;
 
+    public void unpause() { paused = false; }
+
     private int framesSinceLastSave = 0; // licznik klatek od ostatniego zapisu historii
     private Random random = new Random();
 

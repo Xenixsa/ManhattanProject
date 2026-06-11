@@ -2,11 +2,9 @@ package com.menus;
 
 import com.settings.SettingsManager;
 import com.settings.SettingsPanel;
-import com.simulationthings.Renderer;
+import com.simulationthings.*;
 import com.demopanel.PaintingPanel;
-import com.simulationthings.SimulationEngine;
-import com.simulationthings.SimulationPanel;
-import com.simulationthings.SimulationThread;
+import com.simulationthings.Renderer;
 
 import javax.swing.*;
 import java.awt.*;
@@ -18,7 +16,7 @@ import java.awt.FlowLayout;
 
 public class MainMenu { // klasa głównego menu aplikacji
 
-    //Jedno główne okno aplikacji - nie tworzymy nowych okien
+    // Jedno główne okno aplikacji - nie tworzymy nowych okien
     // tylko podmieniamy zawartość za pomocą CardLayout
     JFrame mainMenuFrame = new JFrame();
     CardLayout cardLayout = new CardLayout(); // przełącza widoczny panel
@@ -187,6 +185,7 @@ public class MainMenu { // klasa głównego menu aplikacji
 
 
         SimulationEngine engine          = new SimulationEngine(1920, 1080, grid, showFragments); // silnik fizyki
+        SimulationMemento initialState = engine.save(); // snapshot stanu przed jakimkolwiek neutronem
         SimulationPanel  simulationPanel  = new SimulationPanel(1920, 1080);        // ekran symulacji
         simulationPanel.setEngine(engine); // przekazanie silnika do panelu przez setter
         Renderer         renderer         = new Renderer(1920, 1080);               // zamienia grid[] na obrazek
@@ -200,7 +199,6 @@ public class MainMenu { // klasa głównego menu aplikacji
         // (zwykłego int-a wewnątrz lambdy nie można zmieniać - kompilator krzyczy
         long[] lastTime = { System.nanoTime() };
         int[] frameCount = { 0 };
-
 
         // Lambda wywoływana co klatkę przez SimulationThread:
         // renderuje stan silnika -> przekazuje obrazek do panelu -> odświeża ekran
@@ -224,7 +222,7 @@ public class MainMenu { // klasa głównego menu aplikacji
                 }
         );
 
-        // Przyciski sterowania
+        // Przyciski w panelu symulacji
         JButton pauseButton = new JButton("Pauza [Spacja]");
 
         JButton rewindButton = new JButton("Cofnij [<-]");
@@ -233,25 +231,49 @@ public class MainMenu { // klasa głównego menu aplikacji
         JButton forwardButton = new JButton("Do przodu [->]");
         forwardButton.setEnabled(false); // aktywny dopiero po wstrzymaniu symulacji
 
+        JButton menuButton = new JButton("Menu [M]");
+
+        JButton resetButton = new JButton("Resetuj [R]");
+
 
         pauseButton.addActionListener(e -> {
             engine.togglePause();
             pauseButton.setText(engine.isPaused() ? "Wznów [Spacja]" : "Pauza [Spacja]");
             rewindButton.setEnabled(engine.isPaused());
             forwardButton.setEnabled(engine.isPaused());
+            simulationPanel.requestFocusInWindow();
         });
 
         rewindButton.addActionListener(e -> {
             if (engine.isPaused()) engine.rewind();
+            simulationPanel.requestFocusInWindow();
         });
 
         forwardButton.addActionListener(e -> {
             if (engine.isPaused()) engine.forward();
+            simulationPanel.requestFocusInWindow();
+        });
+
+        menuButton.addActionListener(e -> {
+            simulationThread.stopSimulation(); // zatrzymujemy wątek symulacji
+            mainMenuFrame.setTitle("Manhattan");
+            cardLayout.show(container, "MENU"); // przełączamy widok na menu
+        });
+
+        resetButton.addActionListener(e -> {
+            engine.restore(initialState); // przywracamy stan sprzed pierwszego neutronu
+            engine.unpause(); // upewniamy się, że symulacja nie stoi w pauzie
+            pauseButton.setText("Pauza [Spacja]");
+            rewindButton.setEnabled(false);
+            forwardButton.setEnabled(false);
+            simulationPanel.requestFocusInWindow();
         });
 
         JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 6));
         controlPanel.setBackground(Color.DARK_GRAY);
+        controlPanel.add(menuButton);
         controlPanel.add(pauseButton);
+        controlPanel.add(resetButton);
         controlPanel.add(rewindButton);
         controlPanel.add(forwardButton);
         controlPanel.add(fpsLabel);
@@ -291,6 +313,24 @@ public class MainMenu { // klasa głównego menu aplikacji
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (engine.isPaused()) forwardButton.doClick();
+            }
+        });
+
+
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_R, 0), "reset");
+        actionMap.put("reset", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                resetButton.doClick();
+            }
+        });
+
+
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_M, 0), "menu");
+        actionMap.put("menu", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                menuButton.doClick();
             }
         });
 
