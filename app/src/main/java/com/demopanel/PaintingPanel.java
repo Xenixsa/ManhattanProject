@@ -22,8 +22,18 @@ public class PaintingPanel extends JPanel {
     final int screenHeight = nodeSize*maxRow;
 
     SettingsManager settingsManager = new SettingsManager();
-    String savedlastdirectory = settingsManager.getStringSetting("lastDirectory",System.getProperty("user.dir"));
-    private java.io.File lastDirectory = new java.io.File(savedlastdirectory);
+    private java.io.File lastDirectory = loadLastDirectory();
+
+    // Odczytuje ostatnio używany folder. Jeśli zapisana ścieżka nie istnieje
+    // (np. pochodzi z innego systemu), wraca do katalogu roboczego aplikacji.
+    private java.io.File loadLastDirectory() {
+        String saved = settingsManager.getStringSetting("lastDirectory", "");
+        if (!saved.isEmpty()) {
+            java.io.File dir = new java.io.File(saved);
+            if (dir.exists() && dir.isDirectory()) return dir;
+        }
+        return new java.io.File(System.getProperty("user.dir"), "app"); // podkatalog app - tam, gdzie grid.txt
+    }
 
     boolean paintMode = false;
 
@@ -148,7 +158,6 @@ public class PaintingPanel extends JPanel {
         if (result != JFileChooser.APPROVE_OPTION) return;
 
         java.io.File file = fileChooser.getSelectedFile();
-        lastDirectory = file.getParentFile(); // remember for next time
 
         try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file))) {
             // Wyczyść siatkę
