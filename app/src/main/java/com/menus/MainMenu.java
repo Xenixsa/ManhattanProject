@@ -186,7 +186,14 @@ public class MainMenu { // klasa głównego menu aplikacji
         System.out.println("settingsPanelRef = " + settingsPanelRef);
 
 
-        SimulationEngine engine          = new SimulationEngine(1920, 1080, grid, showFragments, exitOnNeutrons); // silnik fizyki
+        final SimulationStatsLogger[] statsLoggerRef = new SimulationStatsLogger[1];
+        try {
+            statsLoggerRef[0] = new SimulationStatsLogger("app/simulation_stats/simulation_stats.csv");
+        } catch (Exception e) {
+            System.err.println("Nie udało się otworzyć pliku statystyk: " + e.getMessage());
+        }
+
+        SimulationEngine engine          = new SimulationEngine(1920, 1080, grid, showFragments, exitOnNeutrons, statsLoggerRef[0]); // silnik fizyki
         SimulationMemento initialState = engine.save(); // snapshot stanu przed jakimkolwiek neutronem
         SimulationPanel  simulationPanel  = new SimulationPanel(1920, 1080);        // ekran symulacji
         simulationPanel.setEngine(engine); // przekazanie silnika do panelu przez setter
@@ -258,6 +265,7 @@ public class MainMenu { // klasa głównego menu aplikacji
 
         menuButton.addActionListener(e -> {
             simulationThread.stopSimulation(); // zatrzymujemy wątek symulacji
+            if (statsLoggerRef[0] != null) statsLoggerRef[0].close();
             mainMenuFrame.setTitle("Manhattan");
             cardLayout.show(container, "MENU"); // przełączamy widok na menu
         });
@@ -350,6 +358,7 @@ public class MainMenu { // klasa głównego menu aplikacji
             @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
                 simulationThread.stopSimulation(); // zatrzymujemy wątek przed zamknięciem
+                if (statsLoggerRef[0] != null) statsLoggerRef[0].close();
                 System.exit(0);
             }
         });

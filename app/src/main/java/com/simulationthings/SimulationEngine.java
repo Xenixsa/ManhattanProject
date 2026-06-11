@@ -36,13 +36,22 @@ public class SimulationEngine {
     private volatile boolean paused = false; // volatile - czyta wątek symulacji, ustawia wątek UI
     private boolean gridShared = false; // true = aktualny grid trzyma już jakąś pamiątkę
 
+    private final SimulationStatsLogger statsLogger; // zapis statystyk do pliku co 0.5 s
+    private double statsAccumulator = 0.0;
+    private double elapsedTime = 0.0;
+
     public SimulationEngine(int width, int height, int[] grid, boolean showFragments, boolean exitOnNeutrons) {
+        this(width, height, grid, showFragments, exitOnNeutrons, null);
+    }
+
+    public SimulationEngine(int width, int height, int[] grid, boolean showFragments, boolean exitOnNeutrons, SimulationStatsLogger statsLogger) {
         this.width = width;
         this.height = height;
         this.grid = grid;
         this.particles = new ArrayList<>();
         this.showFragments = showFragments;
         this.exitOnNeutrons = exitOnNeutrons;
+        this.statsLogger = statsLogger;
     }
 
     public void fireNeutron(int startX, int startY, int releaseX, int releaseY) {
@@ -106,7 +115,9 @@ public class SimulationEngine {
 
         if (paused) return; // przy pauzie nie liczymy fizyki i nie zapisujemy klatek
 
-        // Zapis historii co 3 kroki - rzadziej niż co krok, żeby bufor obejmował służszy czas
+        statsAccumulator += deltaTime;
+
+        // Zapis historii co 3 kroki - rzadziej niż co krok, żeby bufor obejmował służy czas
         framesSinceLastSave++;
         if (framesSinceLastSave >= 3) {
             history.save(save());
@@ -153,7 +164,29 @@ public class SimulationEngine {
             // sprzątanie: nieaktywne neutrony i wygasłe fragmenty znikają, nowe dołączają
             particles.removeIf(p -> (p instanceof Neutron n && !n.isOnBoard()) || (p instanceof Fragments f && !f.isAlive()));
             particles.addAll(pendingNeutrons);
+
+            while (statsAccumulator >= 0.5) {
+                statsAccumulator -= 0.5;
+                elapsedTime += 0.5;
+                if (statsLogger != null) {
+                    logStats(elapsedTime);
+                }
+            }
         }
+    }
+
+    private void logStats(double seconds) {
+        int neutrons = 0;
+        int fragments = 0;
+        for (Particle p : particles) {
+            if (p instanceof Neutron n && n.isOnBoard()) neutrons++;
+            if (p instanceof Fragments f && f.isAlive()) fragments++;
+        }
+        int atoms = 0;
+        for (int value : grid) {
+            if (value == 1) atoms++;
+        }
+        statsLogger.log(seconds, neutrons, atoms, fragments);
     }
 
 
