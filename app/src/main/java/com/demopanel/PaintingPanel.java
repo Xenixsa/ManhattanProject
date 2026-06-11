@@ -25,14 +25,14 @@ public class PaintingPanel extends JPanel {
     private java.io.File lastDirectory = loadLastDirectory();
 
     // Odczytuje ostatnio używany folder. Jeśli zapisana ścieżka nie istnieje
-    // (np. pochodzi z innego systemu), wraca do katalogu roboczego aplikacji.
+    // (np. pochodzi z innego systemu), wraca do katalogu domowego użytkownika.
     private java.io.File loadLastDirectory() {
         String saved = settingsManager.getStringSetting("lastDirectory", "");
         if (!saved.isEmpty()) {
             java.io.File dir = new java.io.File(saved);
             if (dir.exists() && dir.isDirectory()) return dir;
         }
-        return new java.io.File(System.getProperty("user.dir"), "app"); // podkatalog app - tam, gdzie grid.txt
+        return new java.io.File(System.getProperty("user.dir")); // katalog domowy użytkownika
     }
 
     boolean paintMode = false;
