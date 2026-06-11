@@ -3,6 +3,7 @@ package com.simulationthings;
 import com.particles.Fragments;
 import com.particles.Neutron;
 import com.particles.Particle;
+import com.simulationthings.CollisionLogger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,15 +37,16 @@ public class SimulationEngine {
     private volatile boolean paused = false; // volatile - czyta wątek symulacji, ustawia wątek UI
     private boolean gridShared = false; // true = aktualny grid trzyma już jakąś pamiątkę
 
-    private final SimulationStatsLogger statsLogger; // zapis statystyk do pliku co 0.5 s
+    private final SimulationStatsLogger statsLogger; // zapis statystyk do pliku co 0.01 s
+    private final CollisionLogger collisionLogger;
     private double statsAccumulator = 0.0;
-    private double elapsedTime = 0.0;
+    private double simulationTime = 0.0;
 
     public SimulationEngine(int width, int height, int[] grid, boolean showFragments, boolean exitOnNeutrons) {
-        this(width, height, grid, showFragments, exitOnNeutrons, null);
+        this(width, height, grid, showFragments, exitOnNeutrons, null, null);
     }
 
-    public SimulationEngine(int width, int height, int[] grid, boolean showFragments, boolean exitOnNeutrons, SimulationStatsLogger statsLogger) {
+    public SimulationEngine(int width, int height, int[] grid, boolean showFragments, boolean exitOnNeutrons, SimulationStatsLogger statsLogger, CollisionLogger collisionLogger) {
         this.width = width;
         this.height = height;
         this.grid = grid;
@@ -52,6 +54,7 @@ public class SimulationEngine {
         this.showFragments = showFragments;
         this.exitOnNeutrons = exitOnNeutrons;
         this.statsLogger = statsLogger;
+        this.collisionLogger = collisionLogger;
     }
 
     public void fireNeutron(int startX, int startY, int releaseX, int releaseY) {
@@ -115,6 +118,7 @@ public class SimulationEngine {
 
         if (paused) return; // przy pauzie nie liczymy fizyki i nie zapisujemy klatek
 
+        simulationTime += deltaTime;
         statsAccumulator += deltaTime;
 
         // Zapis historii co 3 kroki - rzadziej niż co krok, żeby bufor obejmował służy czas
@@ -154,6 +158,10 @@ public class SimulationEngine {
                             }
                         }
 
+                        if (collisionLogger != null) {
+                            collisionLogger.log(simulationTime, n.getPixelX(), n.getPixelY());
+                        }
+
                         n.deactivate();
                         spawnNeutrons(n.getPixelX(), n.getPixelY());
                         if (showFragments) spawnFragments(n.getPixelX(), n.getPixelY());
@@ -165,11 +173,11 @@ public class SimulationEngine {
             particles.removeIf(p -> (p instanceof Neutron n && !n.isOnBoard()) || (p instanceof Fragments f && !f.isAlive()));
             particles.addAll(pendingNeutrons);
 
-            while (statsAccumulator >= 0.5) {
-                statsAccumulator -= 0.5;
-                elapsedTime += 0.5;
+            while (statsAccumulator >= 0.01) {
+                statsAccumulator -= 0.01;
+                double logTime = simulationTime - statsAccumulator;
                 if (statsLogger != null) {
-                    logStats(elapsedTime);
+                    logStats(logTime);
                 }
             }
         }

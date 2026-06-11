@@ -4,6 +4,7 @@ public class SimulationThread extends Thread {
 
     private final SimulationEngine engine; // silnik symulacji - liczy fizykę co klatkę
     private final Runnable onRepaint; // pole do odświeżania ekranu - przekazywany  zewnątrz
+    private final Runnable onFinish; // callback wywołany raz po zakończeniu symulacji
     private volatile boolean running = true; // flaga kontrolująca pętlę. Słowo volatile gwarantuje widoczność zmian zmiennej pomiędzy wątkami.
 
     // Stała długość kroku fizyki (1/60 s), niezależna od liczby klatek
@@ -11,9 +12,14 @@ public class SimulationThread extends Thread {
 
 
     public SimulationThread(SimulationEngine engine, Runnable onRepaint) { // konstruktor przyjmuje silnik i funkcję oświeżającą
+        this(engine, onRepaint, null);
+    }
+
+    public SimulationThread(SimulationEngine engine, Runnable onRepaint, Runnable onFinish) { // konstruktor przyjmuje silnik i funkcję oświeżającą
 
         this.engine = engine; // zapisujemy silnik
         this.onRepaint = onRepaint; // zapisujemy funkcję odświeżającą
+        this.onFinish = onFinish;
     }
 
     @Override // nadpisujemy metodę run() z klasy Thread
@@ -26,6 +32,7 @@ public class SimulationThread extends Thread {
 
         // dopóki nie zamknięto okna - nie kończymy jej po zakończeniu symulacji,
         // żeby dało się jeszcze przewijać i oglądać klatki
+        boolean finishNotified = false;
         while (running) {
 
 
@@ -39,6 +46,14 @@ public class SimulationThread extends Thread {
 
             if (engine.isFinished()) {
                 accumulator = 0.0; // fizyka stoi - nie kumulujemy czasu (inaczej skok po wznowieniu)
+                if (!finishNotified) {
+                    finishNotified = true;
+                    if (onFinish != null) {
+                        try {
+                            new Thread(onFinish).start();
+                        } catch (Exception ignored) {}
+                    }
+                }
             } else {
                 accumulator += deltaTime;
 

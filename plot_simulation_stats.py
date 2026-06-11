@@ -1,19 +1,30 @@
 import csv
+import glob
 import os
 import matplotlib.pyplot as plt
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-possible_paths = [
+
+possible_patterns = [
+    os.path.join(base_dir, "app", "simulation_stats", "simulation_stats_*.csv"),
     os.path.join(base_dir, "app", "simulation_stats", "simulation_stats.csv"),
     os.path.join(base_dir, "app", "simulation_stats.csv"),
     os.path.join(base_dir, "simulation_stats.csv"),
 ]
 
-csv_path = next((path for path in possible_paths if os.path.isfile(path)), None)
+def find_latest_file(patterns):
+    candidates = []
+    for pattern in patterns:
+        candidates.extend(glob.glob(pattern))
+    if not candidates:
+        return None
+    return max(candidates, key=os.path.getmtime)
+
+csv_path = find_latest_file(possible_patterns)
 if csv_path is None:
     raise SystemExit(
         "Could not find simulation_stats.csv. Run the simulation first to generate it. "
-        f"Checked: {', '.join(possible_paths)}"
+        f"Checked: {', '.join(possible_patterns)}"
     )
 
 times = []
@@ -37,10 +48,16 @@ plt.plot(times, neutron_counts, label="Neutrony", color="tab:blue", linewidth=2)
 plt.plot(times, atom_counts, label="Atomy", color="tab:orange", linewidth=2)
 plt.plot(times, fragment_counts, label="Fragmenty", color="tab:green", linewidth=2)
 
-plt.title("Simulation Particle Counts Over Time")
 plt.xlabel("Time (seconds)")
 plt.ylabel("Count")
 plt.grid(True, linestyle="--", alpha=0.4)
 plt.legend()
 plt.tight_layout()
+
+output_dir = os.path.join(base_dir, "app", "simulation_stats")
+os.makedirs(output_dir, exist_ok=True)
+png_path = os.path.join(output_dir, "simulation_counts.png")
+plt.savefig(png_path, dpi=150)
+print(f"Saved counts plot to {png_path}")
+
 plt.show()

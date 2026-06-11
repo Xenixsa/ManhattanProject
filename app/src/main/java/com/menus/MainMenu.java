@@ -13,6 +13,13 @@ import java.awt.image.BufferedImage;
 
 import java.awt.event.ActionEvent;
 import java.awt.FlowLayout;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class MainMenu { // klasa głównego menu aplikacji
 
@@ -127,6 +134,34 @@ public class MainMenu { // klasa głównego menu aplikacji
 
 
 
+    private Path getScriptBaseDir() {
+        try {
+            URI location = MainMenu.class.getProtectionDomain().getCodeSource().getLocation().toURI();
+            Path jarPath = Paths.get(location);
+            if (Files.isRegularFile(jarPath)) {
+                Path parent = jarPath;
+                for (int i = 0; i < 4 && parent != null; i++) {
+                    parent = parent.getParent();
+                }
+                if (parent != null) {
+                    return parent.toAbsolutePath();
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return Paths.get(System.getProperty("user.dir")).toAbsolutePath();
+    }
+
+    private void startPythonPlotProcess(Path baseDir, String scriptName) throws IOException {
+        Path scriptPath = baseDir.resolve(scriptName);
+        ProcessBuilder pb = new ProcessBuilder("python3", scriptPath.toString());
+        pb.directory(baseDir.toFile());
+        pb.redirectErrorStream(true);
+        pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+        System.out.println("Launching Python script: " + scriptPath);
+        pb.start();
+    }
+
     private void openSettingsPanel(){
         if (settingsManagerRef == null) settingsManagerRef = new SettingsManager();
         if (settingsPanelRef == null) {
@@ -187,13 +222,18 @@ public class MainMenu { // klasa głównego menu aplikacji
 
 
         final SimulationStatsLogger[] statsLoggerRef = new SimulationStatsLogger[1];
+        final CollisionLogger[] collisionLoggerRef = new CollisionLogger[1];
         try {
-            statsLoggerRef[0] = new SimulationStatsLogger("app/simulation_stats/simulation_stats.csv");
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            statsLoggerRef[0] = new SimulationStatsLogger("app/simulation_stats/simulation_stats_" + timestamp + ".csv");
+            collisionLoggerRef[0] = new CollisionLogger("app/simulation_stats/collision_positions_" + timestamp + ".csv");
+            System.out.println("Logging stats to: " + statsLoggerRef[0].getFilePath());
+            System.out.println("Logging collisions to: " + collisionLoggerRef[0].getFilePath());
         } catch (Exception e) {
-            System.err.println("Nie udało się otworzyć pliku statystyk: " + e.getMessage());
+            System.err.println("Nie udało się otworzyć plików statystyk: " + e.getMessage());
         }
 
-        SimulationEngine engine          = new SimulationEngine(1920, 1080, grid, showFragments, exitOnNeutrons, statsLoggerRef[0]); // silnik fizyki
+        SimulationEngine engine          = new SimulationEngine(1920, 1080, grid, showFragments, exitOnNeutrons, statsLoggerRef[0], collisionLoggerRef[0]); // silnik fizyki
         SimulationMemento initialState = engine.save(); // snapshot stanu przed jakimkolwiek neutronem
         SimulationPanel  simulationPanel  = new SimulationPanel(1920, 1080);        // ekran symulacji
         simulationPanel.setEngine(engine); // przekazanie silnika do panelu przez setter
@@ -211,24 +251,40 @@ public class MainMenu { // klasa głównego menu aplikacji
 
         // Lambda wywoływana co klatkę przez SimulationThread:
         // renderuje stan silnika -> przekazuje obrazek do panelu -> odświeża ekran
+        Runnable onFinish = () -> {
+            new Thread(() -> {
+                try {
+                    Path baseDir = getScriptBaseDir();
+                    System.out.println("Python scripts base dir: " + baseDir);
+                    startPythonPlotProcess(baseDir, "plot_simulation_stats.py");
+                    startPythonPlotProcess(baseDir, "plot_collision_heatmap_2d.py");
+                    startPythonPlotProcess(baseDir, "plot_collision_density_time.py");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.err.println("onFinish plotting failed: " + e.getMessage());
+                }
+            }).start();
+        };
+
         SimulationThread simulationThread = new SimulationThread(
                 engine,
                 () -> {
                     BufferedImage frame = renderer.render(engine.getGrid(), engine.getParticles()); // renderuje nową klatkę
                     simulationPanel.setImage(frame); // przekazuje obrazek do panelu
-                    simulationPanel.repaint(); // mówi Swingowi, żeby odświeżył ekran
+                    simulationPanel.repaint(); // mówi Swingowi, żeby odświeżyć ekran
 
                     // aktualizujemy licznik FPS co 30 klatek, żeby nie migotał
                     frameCount[0]++;
                     if (frameCount[0] >= 30) {
                         long now = System.nanoTime();
-                        // 30 klatek * 1_000_000_000 ns/s podzielone przez czas jaki minął
+                        // 30 klatek * 1_000_000_000 ns/s podzielone przez czas jaki minęł
                         double fps = 30_000_000_000.0 / (now - lastTime[0]);
                         fpsLabel.setText(String.format("FPS: %.0f", fps));
                         lastTime[0] = now;
                         frameCount[0] = 0;
                     }
-                }
+                },
+                onFinish
         );
 
         // Przyciski w panelu symulacji
@@ -266,6 +322,7 @@ public class MainMenu { // klasa głównego menu aplikacji
         menuButton.addActionListener(e -> {
             simulationThread.stopSimulation(); // zatrzymujemy wątek symulacji
             if (statsLoggerRef[0] != null) statsLoggerRef[0].close();
+            if (collisionLoggerRef[0] != null) collisionLoggerRef[0].close();
             mainMenuFrame.setTitle("Manhattan");
             cardLayout.show(container, "MENU"); // przełączamy widok na menu
         });
@@ -359,6 +416,7 @@ public class MainMenu { // klasa głównego menu aplikacji
             public void windowClosing(java.awt.event.WindowEvent e) {
                 simulationThread.stopSimulation(); // zatrzymujemy wątek przed zamknięciem
                 if (statsLoggerRef[0] != null) statsLoggerRef[0].close();
+                if (collisionLoggerRef[0] != null) collisionLoggerRef[0].close();
                 System.exit(0);
             }
         });

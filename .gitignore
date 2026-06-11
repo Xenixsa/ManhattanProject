@@ -30,3 +30,8 @@ build
 
 # Ignore Kotlin plugin data
 .kotlin
+
+# Ignore generated data files
+*.csv
+*.png
+*.gif
