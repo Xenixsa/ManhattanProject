@@ -22,42 +22,47 @@ def find_latest_file(patterns):
 
 csv_path = find_latest_file(possible_patterns)
 if csv_path is None:
-    raise SystemExit(
-        "Could not find simulation_stats.csv. Run the simulation first to generate it. "
-        f"Checked: {', '.join(possible_patterns)}"
-    )
+    raise SystemExit(f"Could not find simulation_stats.csv. Checked: {', '.join(possible_patterns)}")
 
-times = []
-neutron_counts = []
-atom_counts = []
-fragment_counts = []
+times, neutrons, atoms, fragments, fps_vals = [], [], [], [], []
 
-with open(csv_path, newline="") as csvfile:
-    reader = csv.DictReader(csvfile)
+with open(csv_path, newline="") as f:
+    reader = csv.DictReader(f)
     for row in reader:
         times.append(float(row["time_seconds"]))
-        neutron_counts.append(int(row["active_neutrons"]))
-        atom_counts.append(int(row["visible_atoms"]))
-        fragment_counts.append(int(row["active_fragments"]))
+        neutrons.append(int(row["active_neutrons"]))
+        atoms.append(int(row["visible_atoms"]))
+        fragments.append(int(row["active_fragments"]))
+        fps_vals.append(float(row.get("fps", 0)))
 
 if not times:
-    raise SystemExit(f"No data found in {csv_path}. Run the simulation first to generate the CSV.")
+    raise SystemExit(f"No data in {csv_path}.")
 
-plt.figure(figsize=(12, 6))
-plt.plot(times, neutron_counts, label="Neutrony", color="tab:blue", linewidth=2)
-plt.plot(times, atom_counts, label="Atomy", color="tab:orange", linewidth=2)
-plt.plot(times, fragment_counts, label="Fragmenty", color="tab:green", linewidth=2)
+fig, axes = plt.subplots(4, 1, figsize=(12, 14), sharex=True)
+fig.suptitle("Simulation Stats", fontsize=14)
 
-plt.xlabel("Time (seconds)")
-plt.ylabel("Count")
-plt.grid(True, linestyle="--", alpha=0.4)
-plt.legend()
+axes[0].plot(times, neutrons, color="tab:blue", linewidth=1.5)
+axes[0].set_ylabel("Neutrony")
+axes[0].grid(True, linestyle="--", alpha=0.4)
+
+axes[1].plot(times, atoms, color="tab:orange", linewidth=1.5)
+axes[1].set_ylabel("Atomy")
+axes[1].grid(True, linestyle="--", alpha=0.4)
+
+axes[2].plot(times, fragments, color="tab:green", linewidth=1.5)
+axes[2].set_ylabel("Fragmenty")
+axes[2].grid(True, linestyle="--", alpha=0.4)
+
+axes[3].plot(times, fps_vals, color="tab:red", linewidth=1.0, alpha=0.8)
+axes[3].set_ylabel("FPS")
+axes[3].set_xlabel("Czas (s)")
+axes[3].grid(True, linestyle="--", alpha=0.4)
+
 plt.tight_layout()
 
-output_dir = os.path.join(base_dir, "app", "simulation_stats")
-os.makedirs(output_dir, exist_ok=True)
-png_path = os.path.join(output_dir, "simulation_counts.png")
-plt.savefig(png_path, dpi=150)
-print(f"Saved counts plot to {png_path}")
-
+out_dir = os.path.join(base_dir, "app", "simulation_stats")
+os.makedirs(out_dir, exist_ok=True)
+out_path = os.path.join(out_dir, "simulation_counts.png")
+plt.savefig(out_path, dpi=150)
+print(f"Saved to {out_path}")
 plt.show()

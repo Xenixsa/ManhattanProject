@@ -62,7 +62,7 @@ except Exception:
 fig, ax = plt.subplots(figsize=(10, 6))
 # extent to map bin centers to image coordinates
 extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
-im = ax.imshow(heatmap_smoothed, origin='lower', extent=extent, cmap='hot', aspect='auto')
+im = ax.imshow(heatmap_smoothed, origin='upper', extent=extent, cmap='hot', aspect='auto')
 ax.set_xlabel('X position')
 ax.set_ylabel('Y position')
 plt.colorbar(im, ax=ax, label='Collision count')

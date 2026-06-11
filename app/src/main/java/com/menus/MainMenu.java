@@ -278,11 +278,11 @@ public class MainMenu { // klasa głównego menu aplikacji
                     frameCount[0]++;
                     if (frameCount[0] >= 30) {
                         long now = System.nanoTime();
-                        // 30 klatek * 1_000_000_000 ns/s podzielone przez czas jaki minęł
                         double fps = 30_000_000_000.0 / (now - lastTime[0]);
                         fpsLabel.setText(String.format("FPS: %.0f", fps));
                         lastTime[0] = now;
                         frameCount[0] = 0;
+                        engine.setCurrentFps(fps);
                     }
                 },
                 onFinish

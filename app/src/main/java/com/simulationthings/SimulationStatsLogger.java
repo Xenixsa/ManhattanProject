@@ -22,15 +22,15 @@ public class SimulationStatsLogger implements AutoCloseable {
             parent.mkdirs();
         }
         this.writer = new BufferedWriter(new FileWriter(file.toFile(), false));
-        writer.write("time_seconds,active_neutrons,visible_atoms,active_fragments");
+        writer.write("time_seconds,active_neutrons,visible_atoms,active_fragments,fps");
         writer.newLine();
         writer.flush();
     }
 
-    public void log(double seconds, int neutrons, int atoms, int fragments) {
+    public void log(double seconds, int neutrons, int atoms, int fragments, double fps) {
         if (closed) return;
         try {
-            writer.write(String.format(Locale.US, "%.1f,%d,%d,%d", seconds, neutrons, atoms, fragments));
+            writer.write(String.format(Locale.US, "%.1f,%d,%d,%d,%.1f", seconds, neutrons, atoms, fragments, fps));
             writer.newLine();
             writer.flush();
         } catch (IOException e) {
