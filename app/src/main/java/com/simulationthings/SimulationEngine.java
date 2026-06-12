@@ -16,7 +16,7 @@ public class SimulationEngine {
     private int aimStartX, aimStartY;
     private int aimCurrentX, aimCurrentY;
 
-    private int neutronLimit = 10000;
+    private int neutronLimit = 10000000;
     private int width;
     private int height;
     private int[] grid;
@@ -134,7 +134,13 @@ public class SimulationEngine {
             for (Particle p : particles) {
                 if (p instanceof Neutron n && n.isOnBoard()) {
 
-                    int index = n.getPixelY() * width + n.getPixelX();
+                    int px = n.getPixelX();
+                    int py = n.getPixelY();
+                    if (px < 0 || px >= width || py < 0 || py >= height) {
+                        n.deactivate();
+                        continue;
+                    }
+                    int index = py * width + px;
                     if (grid[index] == 1) {
                         ensureGridWritable();
 
@@ -143,7 +149,7 @@ public class SimulationEngine {
                             for (int bx = -blastRadius; bx <= blastRadius; bx++) {
                                 int cx = n.getPixelX() + bx;
                                 int cy = n.getPixelY() + by;
-                                if (cy >= 0 && cx < width && cy >= 0 && cy < height) {
+                                if (cx >= 0 && cx < width && cy >= 0 && cy < height) {
                                     int ci = cy * width + cx;
                                     if (grid[ci] == 1) grid[ci] = 2;
                                 }
