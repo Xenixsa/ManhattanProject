@@ -131,6 +131,8 @@ public class SimulationEngine {
                 p.update(width, height, deltaTime);
             }
 
+            ensureGridWritable();   //przeniesione tu żeby zmniejszyć liczbę "kopii"
+
             for (Particle p : particles) {
                 if (p instanceof Neutron n && n.isOnBoard()) {
 
@@ -142,7 +144,6 @@ public class SimulationEngine {
                     }
                     int index = py * width + px;
                     if (grid[index] == 1) {
-                        ensureGridWritable();
 
                         int blastRadius = 3;
                         for (int by = -blastRadius; by <= blastRadius; by++) {

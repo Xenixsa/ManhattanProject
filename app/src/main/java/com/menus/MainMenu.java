@@ -12,7 +12,6 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 
 import java.awt.event.ActionEvent;
-import java.awt.FlowLayout;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -35,8 +34,10 @@ public class MainMenu { // klasa głównego menu aplikacji
     private static final int DEFAULT_WIDTH = 1280;
     private static final int DEFAULT_HEIGHT = 720;
     private Rectangle normalBounds = new Rectangle(100, 100, DEFAULT_WIDTH, DEFAULT_HEIGHT);
-
-
+    private SimulationThread activeSimulationThread;
+    private JPanel activeDrawingPanel;
+    private JPanel activeSimulationWrapper;
+    private Renderer renderer;
 
     public MainMenu() { // konstruktor - buduje i wyświetla menu
 
@@ -184,11 +185,11 @@ public class MainMenu { // klasa głównego menu aplikacji
         JButton launchButton = new JButton("Odpal symulację!");
         launchButton.addActionListener(e -> startSimulation(paintingPanel)); // przekazujemy planszę dalej
 
-        JPanel drawingPanel = new JPanel(new BorderLayout());
-        drawingPanel.add(paintingPanel, BorderLayout.CENTER); // plansza wypełnia środek
-        drawingPanel.add(launchButton, BorderLayout.SOUTH);   // przycisk na dole
+        activeDrawingPanel = new JPanel(new BorderLayout());
+        activeDrawingPanel.add(paintingPanel, BorderLayout.CENTER); // plansza wypełnia środek
+        activeDrawingPanel.add(launchButton, BorderLayout.SOUTH);   // przycisk na dole
 
-        container.add(drawingPanel, "DRAWING"); // rejestrujemy jako kartę
+        container.add(activeDrawingPanel, "DRAWING"); // rejestrujemy jako kartę
         cardLayout.show(container, "DRAWING"); // przełączamy na ekran rysowania
         mainMenuFrame.setTitle("Narysuj atomy uranu"); // aktualizujemy tytuł okna
     }
@@ -238,7 +239,7 @@ public class MainMenu { // klasa głównego menu aplikacji
         SimulationMemento initialState = engine.save(); // snapshot stanu przed jakimkolwiek neutronem
         SimulationPanel  simulationPanel  = new SimulationPanel(1920, 1080);        // ekran symulacji
         simulationPanel.setEngine(engine); // przekazanie silnika do panelu przez setter
-        Renderer         renderer         = new Renderer(1920, 1080);               // zamienia grid[] na obrazek
+        if (renderer == null) renderer = new Renderer(1920, 1080);           // zamienia grid[] na obrazek
 
 
         JLabel fpsLabel = new JLabel("FPS: --");
@@ -321,11 +322,16 @@ public class MainMenu { // klasa głównego menu aplikacji
         });
 
         menuButton.addActionListener(e -> {
-            simulationThread.stopSimulation(); // zatrzymujemy wątek symulacji
+            activeSimulationThread.stopSimulation();
+            activeSimulationThread = null;
             if (statsLoggerRef[0] != null) statsLoggerRef[0].close();
             if (collisionLoggerRef[0] != null) collisionLoggerRef[0].close();
+            container.remove(activeSimulationWrapper);
+            container.remove(activeDrawingPanel);
             mainMenuFrame.setTitle("Manhattan");
-            cardLayout.show(container, "MENU"); // przełączamy widok na menu
+            cardLayout.show(container, "MENU");
+            container.revalidate();
+            container.repaint();
         });
 
         resetButton.addActionListener(e -> {
@@ -346,11 +352,11 @@ public class MainMenu { // klasa głównego menu aplikacji
         controlPanel.add(forwardButton);
         controlPanel.add(fpsLabel);
 
-        JPanel simulationWrapper = new JPanel(new BorderLayout());
-        simulationWrapper.add(simulationPanel, BorderLayout.CENTER);
-        simulationWrapper.add(controlPanel, BorderLayout.SOUTH);
+        activeSimulationWrapper = new JPanel(new BorderLayout());
+        activeSimulationWrapper.add(simulationPanel, BorderLayout.CENTER);
+        activeSimulationWrapper.add(controlPanel, BorderLayout.SOUTH);
 
-        container.add(simulationWrapper, "SIMULATION");
+        container.add(activeSimulationWrapper, "SIMULATION");
         cardLayout.show(container, "SIMULATION");
 
         // Key bindings - spacja i strzałka w lewo wołają dokładnie te same akcje co przyciski.
@@ -415,7 +421,8 @@ public class MainMenu { // klasa głównego menu aplikacji
         mainMenuFrame.addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
-                simulationThread.stopSimulation(); // zatrzymujemy wątek przed zamknięciem
+                activeSimulationThread.stopSimulation(); // zatrzymujemy wątek przed zamknięciem
+                activeSimulationThread = null;
                 if (statsLoggerRef[0] != null) statsLoggerRef[0].close();
                 if (collisionLoggerRef[0] != null) collisionLoggerRef[0].close();
                 System.exit(0);
@@ -480,6 +487,10 @@ public class MainMenu { // klasa głównego menu aplikacji
             }
         });
 
+        if (activeSimulationThread != null) {
+            activeSimulationThread.stopSimulation();
+        }
+        activeSimulationThread = simulationThread;
         simulationThread.start(); // startujemy wątek - musi być po show() żeby panel był już widoczny
     }
 }
