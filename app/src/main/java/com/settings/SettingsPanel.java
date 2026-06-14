@@ -9,6 +9,7 @@ public class SettingsPanel extends JPanel {
     private JComboBox<String> resolutionCombo;
     private JCheckBox fragmentsCheckBox;
     private JCheckBox exitOnNeutronsCheckBox;
+    private JComboBox<String> paintingCombo;
 
     private final JPanel mainContainer;
     private final CardLayout cardLayout;
@@ -54,6 +55,15 @@ public class SettingsPanel extends JPanel {
                 settingsManager.set("resolution", (String) resolutionCombo.getSelectedItem())
         );
 
+        String[] paintingmodes = {"24x13x80","48x27x40","96x54x20","192x108x10"};
+        paintingCombo = new JComboBox<>(paintingmodes);
+        paintingCombo.setSelectedItem(settingsManager.getStringSetting("paintingmodes","48x27x49"));
+        paintingCombo.setMaximumSize(new Dimension(200,30));
+        paintingCombo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        paintingCombo.addActionListener(e ->
+                settingsManager.set("paintingmodes", (String) paintingCombo.getSelectedItem())
+        );
+
         backButton.addActionListener(e -> {
             settingsManager.save();
             // zmieniamy rozmiar okna zachowując jego aktualną pozycję
@@ -73,6 +83,8 @@ public class SettingsPanel extends JPanel {
         Dimension gap = new Dimension(0, 15);
         add(Box.createVerticalGlue());
         add(resolutionCombo);
+        add(Box.createRigidArea(gap));
+        add(paintingCombo);
         add(Box.createRigidArea(gap));
         add(fragmentsCheckBox);
         add(Box.createRigidArea(gap));
