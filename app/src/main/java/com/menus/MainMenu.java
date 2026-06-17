@@ -155,13 +155,27 @@ public class MainMenu { // klasa głównego menu aplikacji
 
     private void startPythonPlotProcess(Path baseDir, String scriptName) throws IOException {
         Path scriptPath = baseDir.resolve(scriptName);
-        String python = System.getProperty("os.name").toLowerCase().contains("win") ? "python" : "python3";
-        ProcessBuilder pb = new ProcessBuilder(python, scriptPath.toString());
-        pb.directory(baseDir.toFile());
-        pb.redirectErrorStream(true);
-        pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
-        System.out.println("Launching Python script: " + scriptPath);
-        pb.start();
+
+        // lista kandydatów do wypróbowania po kolei - różne systemy różnie nazywają interpreter
+        String[] candidates = System.getProperty("os.name").toLowerCase().contains("win")
+                ? new String[]{"python", "py"}
+                : new String[]{"python3", "python"};
+
+        IOException lastError = null;
+        for (String python : candidates) {
+            try {
+                ProcessBuilder pb = new ProcessBuilder(python, scriptPath.toString());
+                pb.directory(baseDir.toFile());
+                pb.redirectErrorStream(true);
+                pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+                pb.start();
+                System.out.println("Launching Python script via '"  + python + "':" + scriptPath);
+                return; // zadziałało - nie próbujemy dalszych kandydatów
+            } catch (IOException e) {
+                lastError = e; // ten interpreter nie istnieje w PATH - prubujemy następnego
+            }
+        }
+        throw lastError; // żaden z kandydatów nie zadziałał
     }
 
     private void openSettingsPanel(){

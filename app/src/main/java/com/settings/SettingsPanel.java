@@ -10,6 +10,7 @@ public class SettingsPanel extends JPanel {
     private JCheckBox fragmentsCheckBox;
     private JCheckBox exitOnNeutronsCheckBox;
     private JComboBox<String> paintingCombo;
+    private JButton applyResolutionButton = new JButton("Zastosuj rozdzielczość");
 
     private final JPanel mainContainer;
     private final CardLayout cardLayout;
@@ -51,9 +52,6 @@ public class SettingsPanel extends JPanel {
         resolutionCombo.setSelectedItem(settingsManager.getStringSetting("resolution", "1920x1080"));
         resolutionCombo.setMaximumSize(new Dimension(200, 30));
         resolutionCombo.setAlignmentX(Component.CENTER_ALIGNMENT);
-        resolutionCombo.addActionListener(e ->
-                settingsManager.set("resolution", (String) resolutionCombo.getSelectedItem())
-        );
 
         String[] paintingmodes = {"24x13x80","48x27x40","96x54x20","192x108x10"};
         paintingCombo = new JComboBox<>(paintingmodes);
@@ -65,24 +63,31 @@ public class SettingsPanel extends JPanel {
         );
 
         backButton.addActionListener(e -> {
+            settingsManager.save(); // zapisujemy fragmenty, tryb końca, siatkę itd.
+            cardLayout.show(mainContainer, "MENU"); // wracamy do menu BEZ zmiany rozmiaru okna
+        });
+
+        applyResolutionButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        applyResolutionButton.addActionListener(e -> {
+            // dopiero tutaj realnie zmieniamy rozmiar okna i utrwalamy wybór
+            String resolution = (String) resolutionCombo.getSelectedItem();
+            settingsManager.set("resolution", resolution);
             settingsManager.save();
-            // zmieniamy rozmiar okna zachowując jego aktualną pozycję
             try {
-                String resolution = settingsManager.getStringSetting("resolution", "1920x1080");
                 String[] parts = resolution.split("x");
                 int winW = Integer.parseInt(parts[0]);
                 int winH = Integer.parseInt(parts[1]);
-                Point location = jFrame.getLocation(); // zapamiętujemy aktualną pozycję
+                Point location = jFrame.getLocation(); // zapamiętujemy pozycję, żeby okno nie skakało
                 jFrame.setSize(winW, winH);
-                jFrame.setLocation(location); // przywracamy pozycję - okno nie skacze
+                jFrame.setLocation(location);
             } catch (Exception ignored) {}
-
-            cardLayout.show(mainContainer, "MENU");
         });
 
         Dimension gap = new Dimension(0, 15);
         add(Box.createVerticalGlue());
         add(resolutionCombo);
+        add(Box.createRigidArea(new Dimension(0, 5)));
+        add(applyResolutionButton);
         add(Box.createRigidArea(gap));
         add(paintingCombo);
         add(Box.createRigidArea(gap));
