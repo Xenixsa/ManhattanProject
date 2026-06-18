@@ -10,52 +10,70 @@ import java.util.Random;
 
 public class SimulationEngine {
 
-    private boolean started = false; // czy użytkownik już strzelił
+    private boolean started = false;
 
-    private boolean isAiming = false; // flaga informująca czy gracz aktualnie naciąga celownik
-    private int aimStartX, aimStartY; // współrzędne punktu kliknięcia myszy
-    private int aimCurrentX, aimCurrentY; // współrzędne aktualnej pozycji myszy podczas przeciągania
+    private boolean isAiming = false;
+    private int aimStartX, aimStartY;
+    private int aimCurrentX, aimCurrentY;
 
-    private int neutronLimit = 10000;
+    private int neutronLimit = 10000000;
     private int width;
     private int height;
     private int[] grid;
     private final boolean showFragments;
 
-    private int framesSinceLastSave = 0; // licznik klatek od ostatniego zapisu historii
+    public void unpause() { paused = false; }
+
+    private final boolean exitOnNeutrons;
+
+    private int framesSinceLastSave = 0;
     private Random random = new Random();
 
     private List<Particle> particles = new ArrayList<>();
     private List<Particle> pendingNeutrons = new ArrayList<>();
 
-    private final SimulationHistory history = new SimulationHistory(); // Caretaker - przechowuje zdjęcia
-    private volatile boolean paused = false; // volatile - czyta wątek symulacji, ustawia wątek UI
-    private boolean gridShared = false; // true = aktualny grid trzyma już jakąś pamiątkę
+    private final SimulationHistory history = new SimulationHistory();
+    private volatile boolean paused = false;
+    private boolean gridShared = false;
 
-    public SimulationEngine(int width, int height, int[] grid, boolean showFragments){
+    private final SimulationStatsLogger statsLogger;
+    private final CollisionLogger collisionLogger;
+    private double statsAccumulator = 0.0;
+    private double simulationTime = 0.0;
+
+    private volatile double currentFps = 0.0;
+    public void setCurrentFps(double fps) { this.currentFps = fps; }
+
+    public SimulationEngine(int width, int height, int[] grid, boolean showFragments, boolean exitOnNeutrons) {
+        this(width, height, grid, showFragments, exitOnNeutrons, null, null);
+    }
+
+    public SimulationEngine(int width, int height, int[] grid, boolean showFragments, boolean exitOnNeutrons, SimulationStatsLogger statsLogger, CollisionLogger collisionLogger) {
         this.width = width;
         this.height = height;
         this.grid = grid;
         this.particles = new ArrayList<>();
         this.showFragments = showFragments;
+        this.exitOnNeutrons = exitOnNeutrons;
+        this.statsLogger = statsLogger;
+        this.collisionLogger = collisionLogger;
     }
 
-    public void fireNeutron(int startX, int startY, int releaseX, int releaseY){
-        double dx = startX - releaseX; //obliczamy wektory kierunku naciagniecia
+    public void fireNeutron(int startX, int startY, int releaseX, int releaseY) {
+        double dx = startX - releaseX;
         double dy = startY - releaseY;
-        double speedMultiplier = 0.05;
-        dx =dx * speedMultiplier;
-        dy =dy * speedMultiplier;
+        double speedMultiplier = 3.0;
+        dx = dx * speedMultiplier;
+        dy = dy * speedMultiplier;
         addNeutron(startX, startY, dx, dy);
     }
 
-    public void addNeutron(double x, double y, double dx, double dy){
+    public void addNeutron(double x, double y, double dx, double dy) {
         started = true;
-        particles.add(new Neutron(x, y, dx, dy));
+        particles.add(new Neutron(x, y, dx, dy, !exitOnNeutrons));
     }
 
     private void spawnNeutrons(int x, int y) {
-        // liczymy tylko neutrony, bo fragmenty nie napędzają reakcji i nie powinny blokować limitu
         long neutronCount = particles.stream()
                 .filter(p -> p instanceof Neutron)
                 .count();
@@ -63,30 +81,26 @@ public class SimulationEngine {
         if (neutronCount < neutronLimit) {
             for (int i = 0; i < 3; i++) {
                 double angle = random.nextDouble() * 2 * Math.PI;
-                double speed = 2.0;
+                double speed = 120.0;
                 pendingNeutrons.add(new Neutron(x, y,
-                        Math.cos(angle) * speed, Math.sin(angle) * speed));
+                        Math.cos(angle) * speed, Math.sin(angle) * speed, !exitOnNeutrons));
             }
         }
     }
 
     public List<Particle> getParticles() {
-        // Zwracamy kopię pod lockiem - inaczej wątek renderujący i wątek UI
-        // mogą jednocześnie czytać i modyfikować tę samą listę
         synchronized (particles) {
             return new ArrayList<>(particles);
         }
     }
 
-    // Szuka cząstki w okolicy podanych współrzędnych (w przestrzeni 1920x1080).
-    // Zwraca null, jeśli żadna cząstka nie jest wystarczająco blisko.
     public Particle getParticleAt(double x, double y) {
-        double threshold = 20.0; // promień wykrywania w pikselach
+        double threshold = 20.0;
         Particle closest = null;
-        double closestDist =  Double.MAX_VALUE;
-        synchronized (particles) { // synchronized, bo lista jest współdzielona między wątkami
+        double closestDist = Double.MAX_VALUE;
+        synchronized (particles) {
             for (Particle p : particles) {
-                double dist = Math.hypot(p.getX() - x, p.getY() - y); // hypot to pierwiastek z (a^2 + b^2) - odległość między dwoma punktami
+                double dist = Math.hypot(p.getX() - x, p.getY() - y);
                 if (dist < threshold && dist < closestDist) {
                     closest = p;
                     closestDist = dist;
@@ -96,62 +110,98 @@ public class SimulationEngine {
         return closest;
     }
 
+    public void update(double deltaTime) {
 
-    public void update() {
+        if (paused) return;
 
-        if (paused) return; // przy pauzie nie liczymy fizyki i nie zapisujemy klatek
+        simulationTime += deltaTime;
+        statsAccumulator += deltaTime;
 
         framesSinceLastSave++;
         if (framesSinceLastSave >= 3) {
             history.save(save());
             framesSinceLastSave = 0;
         }
-        //history.save(save()); // zapamiętujemy stan SPRZED tego kroku, żeby móc się cofnąć
 
         pendingNeutrons.clear();
-        synchronized (particles){
-        for (Particle p : particles) {
-            if (p instanceof Neutron n) {
-                if (!n.isOnBoard()) continue;
-                n.move(width, height);
-                if (!n.isOnBoard()) continue;
 
-                int index = n.getPixelY() * width + n.getPixelX();
-                if (grid[index] == 1) {
-                    ensureGridWritable(); // klonuj grid przed zmianą, żeby nie zepsuć zapisanych
-                    int blastRadius = 3;
-                    for (int by = -blastRadius; by <= blastRadius; by++) {
-                        for (int bx = -blastRadius; bx <= blastRadius; bx++) {
-                            int cx = n.getPixelX() + bx;
-                            int cy = n.getPixelY() + by;
-                            if (cx >= 0 && cx < width && cy >= 0 && cy < height) {
-                                int ci = cy * width + cx;
-                                if (grid[ci] == 1) grid[ci] = 2;
+        synchronized (particles) {
+
+            for (Particle p : particles) {
+                p.update(width, height, deltaTime);
+            }
+
+            ensureGridWritable();   //przeniesione tu żeby zmniejszyć liczbę "kopii"
+
+            for (Particle p : particles) {
+                if (p instanceof Neutron n && n.isOnBoard()) {
+
+                    int px = n.getPixelX();
+                    int py = n.getPixelY();
+                    if (px < 0 || px >= width || py < 0 || py >= height) {
+                        n.deactivate();
+                        continue;
+                    }
+                    int index = py * width + px;
+                    if (grid[index] == 1) {
+
+                        int blastRadius = 3;
+                        for (int by = -blastRadius; by <= blastRadius; by++) {
+                            for (int bx = -blastRadius; bx <= blastRadius; bx++) {
+                                int cx = n.getPixelX() + bx;
+                                int cy = n.getPixelY() + by;
+                                if (cx >= 0 && cx < width && cy >= 0 && cy < height) {
+                                    int ci = cy * width + cx;
+                                    if (grid[ci] == 1) grid[ci] = 2;
+                                }
                             }
                         }
-                    }
-                    n.deactivate();
-                    spawnNeutrons(n.getPixelX(), n.getPixelY());
-                    if (showFragments) spawnFragments(n.getPixelX(), n.getPixelY());
-                }
 
-            } else if (p instanceof Fragments f) {
-                f.update(width, height); // odbija się od ścian, brak innych interakcji
+                        if (collisionLogger != null) {
+                            collisionLogger.log(simulationTime, n.getPixelX(), n.getPixelY());
+                        }
+
+                        n.deactivate();
+                        spawnNeutrons(n.getPixelX(), n.getPixelY());
+                        if (showFragments) spawnFragments(n.getPixelX(), n.getPixelY());
+                    }
+                }
+            }
+
+            particles.removeIf(p -> (p instanceof Neutron n && !n.isOnBoard()) || (p instanceof Fragments f && !f.isAlive()));
+            particles.addAll(pendingNeutrons);
+
+            while (statsAccumulator >= 0.01) {
+                statsAccumulator -= 0.01;
+                double logTime = simulationTime - statsAccumulator;
+                if (statsLogger != null) {
+                    logStats(logTime);
+                }
             }
         }
+    }
 
-        particles.removeIf(p -> (p instanceof Neutron n && !n.isOnBoard()) || (p instanceof Fragments f && !f.isAlive()));
-        particles.addAll(pendingNeutrons);
-    }}
+    private void logStats(double seconds) {
+        int neutrons = 0;
+        int fragments = 0;
+        for (Particle p : particles) {
+            if (p instanceof Neutron n && n.isOnBoard()) neutrons++;
+            if (p instanceof Fragments f && f.isAlive()) fragments++;
+        }
+        int atoms = 0;
+        for (int value : grid) {
+            if (value == 1) atoms++;
+        }
+        statsLogger.log(seconds, neutrons, atoms, fragments, currentFps);
+    }
 
     private void spawnFragments(int x, int y) {
-        // dwa fragmenty w przeciwnych kierunkach
         double angle = random.nextDouble() * 2 * Math.PI;
-        double speed = 1.2;
+        double speed = 72.0;
 
         double dx1 = Math.cos(angle) * speed;
         double dy1 = Math.sin(angle) * speed;
-        double dx2 = -dx1; // dokładnie przeciwny kierunek
+        double dx2 = -dx1;
         double dy2 = -dy1;
 
         pendingNeutrons.add(new Fragments(x, y, dx1, dy1));
@@ -159,14 +209,19 @@ public class SimulationEngine {
     }
 
     public boolean isFinished() {
-        for (int i = 0; i < grid.length; i++) {
-            if (grid[i] == 1) return false; // zostały jeszcze nierozszczepione atomy
+
+        if (exitOnNeutrons) {
+            if (!started) return false;
+            synchronized (particles) {
+                return particles.stream().noneMatch(p -> p instanceof Neutron n && n.isOnBoard());
+            }
         }
-        return true; // wszystkie żółte zniszczone
+        for (int i = 0; i < grid.length; i++) {
+            if (grid[i] == 1) return false;
+        }
+        return true;
     }
 
-
-    // Metoda pozwalająca z zewnątrz zaktualizować cały stan celowania w silniku za jednym razem
     public void setAimState(boolean isAiming, int startX, int startY, int currentX, int currentY) {
         this.isAiming = isAiming;
         this.aimStartX = startX;
@@ -175,36 +230,27 @@ public class SimulationEngine {
         this.aimCurrentY = currentY;
     }
 
-    // Gettery, dzięki którym SimulationPanel będzie mógł pobrać dane do narysowania strzałki
     public boolean isAiming() { return isAiming; }
     public int getAimStartX() { return aimStartX; }
     public int getAimStartY() { return aimStartY; }
     public int getAimCurrentX() { return aimCurrentX; }
     public int getAimCurrentY() { return aimCurrentY; }
 
-    // Tworzy zdjęcie aktualnego stanu (rola Originatora). Od tej chwili grid jest tylko-do-odczytu,
-    // bo właśnie oddaliśmy jego referencję pamiątce.
     public SimulationMemento save() {
         gridShared = true;
         return new SimulationMemento(grid, particles, started);
     }
 
-    // Przywraca stan ze zdjęcia. Bierzemy referencję planszy z pamiątki
-    // i znów oznaczamy ją jako współdzieloną.
     public void restore(SimulationMemento memento) {
-        // Lock na particles - ten sam co w getParticles(),
-        // więc restore i render nigdy nie wykonają się równocześnie
-        synchronized (particles) { // to oznacza "tylko jeden wątek na raz może wejść do bloku trzymającego lock na tym obiekcie"
+        synchronized (particles) {
             grid = memento.getGrid();
             gridShared = true;
             particles.clear();
-            particles.addAll(memento.getParticles()); // getParticles() zwraca świeże kopie
+            particles.addAll(memento.getParticles());
         }
         started = memento.isStarted();
     }
 
-    // Jeśli aktualny grid jest współdzielony z pamiątką, klonujemy go PRZED modyfikacją.
-    // Bez tego nadpisalibyśmy dane w zapisanych zdjęciach.
     private void ensureGridWritable() {
         if (gridShared) {
             grid = grid.clone();
@@ -212,17 +258,18 @@ public class SimulationEngine {
         }
     }
 
-    // Getter potrzebny dlatego, że silnik może podmienić referencję grid pod spodem (copy-on-write).
-    // Renderer musi zawsze pobierać aktualną tablicę przez silnik, nie trzymać starej referencji.
     public int[] getGrid() { return grid; }
 
     public void togglePause() { paused = !paused; }
     public boolean isPaused() { return paused; }
 
-    // Cofa symulację o jedną zapisaną klatkę. Wywołuj tylko przy pauzie -
-    // wtedy wątek symulacji nic nie robi i nie ma wyścigu o wspólne dane.
     public void rewind() {
-        SimulationMemento previous = history.undo();
+        SimulationMemento previous = history.rewind();
         if (previous != null) restore(previous);
+    }
+
+    public void forward() {
+        SimulationMemento next = history.forward();
+        if (next != null) restore(next);
     }
 }

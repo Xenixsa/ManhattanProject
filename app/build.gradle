@@ -34,8 +34,8 @@ java {
 }
 
 application {
-    // Define the main class for the application.
     mainClass = 'com.Main'
+    applicationDefaultJvmArgs = ['-Xmx4g']
 }
 
 jar{

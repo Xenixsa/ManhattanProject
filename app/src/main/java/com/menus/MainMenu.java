@@ -2,11 +2,9 @@ package com.menus;
 
 import com.settings.SettingsManager;
 import com.settings.SettingsPanel;
-import com.simulationthings.Renderer;
+import com.simulationthings.*;
 import com.demopanel.PaintingPanel;
-import com.simulationthings.SimulationEngine;
-import com.simulationthings.SimulationPanel;
-import com.simulationthings.SimulationThread;
+import com.simulationthings.Renderer;
 
 import javax.swing.*;
 import java.awt.*;
@@ -14,20 +12,32 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 
 import java.awt.event.ActionEvent;
-import java.awt.FlowLayout;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class MainMenu { // klasa głównego menu aplikacji
 
-    //Jedno główne okno aplikacji - nie tworzymy nowych okien
+    // Jedno główne okno aplikacji - nie tworzymy nowych okien
     // tylko podmieniamy zawartość za pomocą CardLayout
     JFrame mainMenuFrame = new JFrame();
     CardLayout cardLayout = new CardLayout(); // przełącza widoczny panel
     JPanel container = new JPanel(cardLayout); // kontener trzymający wszystkie karty (MENU, DRAWING, SIMULATION)
     JPanel menuPanel = new JPanel(); // panel ekranu startowego z przyciskami
+
     private SettingsPanel settingsPanelRef = null;
     private SettingsManager settingsManagerRef = null;
-    private int configWindowWidth = 1920;
-    private int configWindowHeight = 1080;
+    private static final int DEFAULT_WIDTH = 1280;
+    private static final int DEFAULT_HEIGHT = 720;
+    private Rectangle normalBounds = new Rectangle(100, 100, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+    private SimulationThread activeSimulationThread;
+    private JPanel activeDrawingPanel;
+    private JPanel activeSimulationWrapper;
+    private Renderer renderer;
 
     public MainMenu() { // konstruktor - buduje i wyświetla menu
 
@@ -59,27 +69,113 @@ public class MainMenu { // klasa głównego menu aplikacji
 
         container.add(menuPanel, "MENU"); // rejestrujemy panel menu jako pierwszą kartę
 
-        // Apply configured resolution for main menu and panels
-        try {
-            String resolution = settingsManagerRef.getStringSetting("resolution", "1920x1080");
-            String[] parts = resolution.split("x");
-            configWindowWidth = Integer.parseInt(parts[0]);
-            configWindowHeight = Integer.parseInt(parts[1]);
-            menuPanel.setPreferredSize(new Dimension(configWindowWidth, configWindowHeight));
-            mainMenuFrame.setSize(configWindowWidth, configWindowHeight);
-            mainMenuFrame.setLocationRelativeTo(null);
-        } catch (Exception ignored) {
-        }
 
         mainMenuFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mainMenuFrame.setTitle("Manhattan");
         mainMenuFrame.setResizable(true); // pozwala na zmianę rozmiaru, aby system mógł poprawnie zmaksymalizować okno
         mainMenuFrame.add(container); // do okna trafia kontener, nie bezpośrednio panel
+        restoreWindowState(); // przywracamy pozycję i rozmiar z poprzedniej sesji
         mainMenuFrame.setVisible(true);
+
+
+
+        // aktualizujemy normalBounds przy każdym ruchu lub zmianie rozmiaru okna,
+        // żeby mieć zawsze aktualne wymiary niezależnie od stanu przy zamknięciu
+        mainMenuFrame.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                normalBounds = mainMenuFrame.getBounds();
+            }
+            @Override
+            public void componentMoved(java.awt.event.ComponentEvent e) {
+                normalBounds = mainMenuFrame.getBounds();
+            }
+        });
+
+
+        // zapis pozycji okna tuż przed zakończeniem programu - niezależnie od sposobu wyjścia
+        Runtime.getRuntime().addShutdownHook(new Thread(this::saveWindowState));
+
 
         startbutton.addActionListener(e -> openDrawing());
         settingsbutton.addActionListener(e -> openSettingsPanel());
         exitbutton.addActionListener(e -> System.exit(0));
+    }
+
+    // Zapisuje pozycję, rozmiar i stan ona do ustawień.
+    // Przy zmaksymalizowanym oknie pobieramy wymiary przed maksymalizacją (normalBounds),
+    // żeby przy przywróceniu nie zapisać rozmiaru pełnego ekranu.
+    private void saveWindowState() {
+        settingsManagerRef.set("windowX", String.valueOf(normalBounds.x));
+        settingsManagerRef.set("windowY", String.valueOf(normalBounds.y));
+        settingsManagerRef.set("windowWidth", String.valueOf(normalBounds.width));
+        settingsManagerRef.set("windowHeight", String.valueOf(normalBounds.height));
+        settingsManagerRef.save();
+    }
+
+
+    // Przywraca pozycję i rozmiar okna z poprzedniej sesji.
+    // Przy pierwszym uruchomieniu (brak zapisanych wartości) maksymalizuje okno.
+    private void restoreWindowState() {
+        int x = settingsManagerRef.getIntSetting("windowX", Integer.MAX_VALUE);
+        int y = settingsManagerRef.getIntSetting("windowY", Integer.MAX_VALUE);
+        int width = settingsManagerRef.getIntSetting("windowWidth", -1);
+        int height = settingsManagerRef.getIntSetting("windowHeight", -1);
+
+        if (width <= 0 || height <= 0) {
+            // pierwsze uruchomienie - okno na cały główny ekran
+            Rectangle screen = GraphicsEnvironment.getLocalGraphicsEnvironment()
+                    .getDefaultScreenDevice().getDefaultConfiguration().getBounds();
+            normalBounds = screen;
+        } else  {
+            normalBounds = new Rectangle(x, y, width, height);
+        }
+        mainMenuFrame.setBounds(normalBounds);
+    }
+
+
+
+    private Path getScriptBaseDir() {
+        try {
+            URI location = MainMenu.class.getProtectionDomain().getCodeSource().getLocation().toURI();
+            Path jarPath = Paths.get(location);
+            if (Files.isRegularFile(jarPath)) {
+                Path parent = jarPath;
+                for (int i = 0; i < 4 && parent != null; i++) {
+                    parent = parent.getParent();
+                }
+                if (parent != null) {
+                    return parent.toAbsolutePath();
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return Paths.get(System.getProperty("user.dir")).toAbsolutePath();
+    }
+
+    private void startPythonPlotProcess(Path baseDir, String scriptName) throws IOException {
+        Path scriptPath = baseDir.resolve(scriptName);
+
+        // lista kandydatów do wypróbowania po kolei - różne systemy różnie nazywają interpreter
+        String[] candidates = System.getProperty("os.name").toLowerCase().contains("win")
+                ? new String[]{"python", "py"}
+                : new String[]{"python3", "python"};
+
+        IOException lastError = null;
+        for (String python : candidates) {
+            try {
+                ProcessBuilder pb = new ProcessBuilder(python, scriptPath.toString());
+                pb.directory(baseDir.toFile());
+                pb.redirectErrorStream(true);
+                pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+                pb.start();
+                System.out.println("Launching Python script via '"  + python + "':" + scriptPath);
+                return; // zadziałało - nie próbujemy dalszych kandydatów
+            } catch (IOException e) {
+                lastError = e; // ten interpreter nie istnieje w PATH - prubujemy następnego
+            }
+        }
+        throw lastError; // żaden z kandydatów nie zadziałał
     }
 
     private void openSettingsPanel(){
@@ -90,6 +186,8 @@ public class MainMenu { // klasa głównego menu aplikacji
         }
 
         cardLayout.show(container, "SETTINGS");
+        settingsPanelRef.revalidate();
+        settingsPanelRef.repaint();
     }
 
     private void openDrawing() {
@@ -101,11 +199,11 @@ public class MainMenu { // klasa głównego menu aplikacji
         JButton launchButton = new JButton("Odpal symulację!");
         launchButton.addActionListener(e -> startSimulation(paintingPanel)); // przekazujemy planszę dalej
 
-        JPanel drawingPanel = new JPanel(new BorderLayout());
-        drawingPanel.add(paintingPanel, BorderLayout.CENTER); // plansza wypełnia środek
-        drawingPanel.add(launchButton, BorderLayout.SOUTH);   // przycisk na dole
+        activeDrawingPanel = new JPanel(new BorderLayout());
+        activeDrawingPanel.add(paintingPanel, BorderLayout.CENTER); // plansza wypełnia środek
+        activeDrawingPanel.add(launchButton, BorderLayout.SOUTH);   // przycisk na dole
 
-        container.add(drawingPanel, "DRAWING"); // rejestrujemy jako kartę
+        container.add(activeDrawingPanel, "DRAWING"); // rejestrujemy jako kartę
         cardLayout.show(container, "DRAWING"); // przełączamy na ekran rysowania
         mainMenuFrame.setTitle("Narysuj atomy uranu"); // aktualizujemy tytuł okna
     }
@@ -133,28 +231,29 @@ public class MainMenu { // klasa głównego menu aplikacji
         }
 
         // Read settings
-        boolean showFragments = true;
-        String resolution = "1920x1080";
-        if (settingsManagerRef != null) {
-            showFragments = settingsManagerRef.getStringSetting("fragments", "true").equals("true");
-            resolution = settingsManagerRef.getStringSetting("resolution", "1920x1080");
-        }
+        boolean showFragments = settingsManagerRef.getStringSetting("fragments", "true").equals("true");
+        boolean exitOnNeutrons = (settingsPanelRef != null) && settingsPanelRef.isExitOnNeutrons();
+        System.out.println("exitOnNeutrons = " + exitOnNeutrons);
+        System.out.println("settingsPanelRef = " + settingsPanelRef);
 
-        // apply window size from resolution setting (does not change engine internal resolution)
+
+        final SimulationStatsLogger[] statsLoggerRef = new SimulationStatsLogger[1];
+        final CollisionLogger[] collisionLoggerRef = new CollisionLogger[1];
         try {
-            String[] parts = resolution.split("x");
-            int winW = Integer.parseInt(parts[0]);
-            int winH = Integer.parseInt(parts[1]);
-            mainMenuFrame.setExtendedState(JFrame.NORMAL);
-            mainMenuFrame.setSize(winW, winH);
-            mainMenuFrame.setLocationRelativeTo(null);
-        } catch (Exception ignored) {
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            statsLoggerRef[0] = new SimulationStatsLogger("app/simulation_stats/simulation_stats_" + timestamp + ".csv");
+            collisionLoggerRef[0] = new CollisionLogger("app/simulation_stats/collision_positions_" + timestamp + ".csv");
+            System.out.println("Logging stats to: " + statsLoggerRef[0].getFilePath());
+            System.out.println("Logging collisions to: " + collisionLoggerRef[0].getFilePath());
+        } catch (Exception e) {
+            System.err.println("Nie udało się otworzyć plików statystyk: " + e.getMessage());
         }
 
-        SimulationEngine engine          = new SimulationEngine(1920, 1080, grid, showFragments); // silnik fizyki
+        SimulationEngine engine          = new SimulationEngine(1920, 1080, grid, showFragments, exitOnNeutrons, statsLoggerRef[0], collisionLoggerRef[0]); // silnik fizyki
+        SimulationMemento initialState = engine.save(); // snapshot stanu przed jakimkolwiek neutronem
         SimulationPanel  simulationPanel  = new SimulationPanel(1920, 1080);        // ekran symulacji
         simulationPanel.setEngine(engine); // przekazanie silnika do panelu przez setter
-        Renderer         renderer         = new Renderer(1920, 1080);               // zamienia grid[] na obrazek
+        if (renderer == null) renderer = new Renderer(1920, 1080);           // zamienia grid[] na obrazek
 
 
         JLabel fpsLabel = new JLabel("FPS: --");
@@ -166,55 +265,112 @@ public class MainMenu { // klasa głównego menu aplikacji
         long[] lastTime = { System.nanoTime() };
         int[] frameCount = { 0 };
 
-
         // Lambda wywoływana co klatkę przez SimulationThread:
         // renderuje stan silnika -> przekazuje obrazek do panelu -> odświeża ekran
+        Runnable onFinish = () -> {
+            new Thread(() -> {
+                try {
+                    Path baseDir = getScriptBaseDir();
+                    System.out.println("Python scripts base dir: " + baseDir);
+                    startPythonPlotProcess(baseDir, "plot_simulation_stats.py");
+                    startPythonPlotProcess(baseDir, "plot_collision_heatmap_2d.py");
+                    startPythonPlotProcess(baseDir, "plot_collision_density_time.py");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.err.println("onFinish plotting failed: " + e.getMessage());
+                }
+            }).start();
+        };
+
         SimulationThread simulationThread = new SimulationThread(
                 engine,
                 () -> {
                     BufferedImage frame = renderer.render(engine.getGrid(), engine.getParticles()); // renderuje nową klatkę
                     simulationPanel.setImage(frame); // przekazuje obrazek do panelu
-                    simulationPanel.repaint(); // mówi Swingowi, żeby odświeżył ekran
+                    simulationPanel.repaint(); // mówi Swingowi, żeby odświeżyć ekran
 
                     // aktualizujemy licznik FPS co 30 klatek, żeby nie migotał
                     frameCount[0]++;
                     if (frameCount[0] >= 30) {
                         long now = System.nanoTime();
-                        // 30 klatek * 1_000_000_000 ns/s podzielone przez czas jaki minął
                         double fps = 30_000_000_000.0 / (now - lastTime[0]);
                         fpsLabel.setText(String.format("FPS: %.0f", fps));
                         lastTime[0] = now;
                         frameCount[0] = 0;
+                        engine.setCurrentFps(fps);
                     }
-                }
+                },
+                onFinish
         );
 
-        // Przyciski sterowania
+        // Przyciski w panelu symulacji
         JButton pauseButton = new JButton("Pauza [Spacja]");
+
         JButton rewindButton = new JButton("Cofnij [<-]");
         rewindButton.setEnabled(false); // aktywny dopiero po wstrzymaniu symulacji
+
+        JButton forwardButton = new JButton("Do przodu [->]");
+        forwardButton.setEnabled(false); // aktywny dopiero po wstrzymaniu symulacji
+
+        JButton menuButton = new JButton("Menu [M]");
+
+        JButton resetButton = new JButton("Resetuj [R]");
+
 
         pauseButton.addActionListener(e -> {
             engine.togglePause();
             pauseButton.setText(engine.isPaused() ? "Wznów [Spacja]" : "Pauza [Spacja]");
             rewindButton.setEnabled(engine.isPaused());
+            forwardButton.setEnabled(engine.isPaused());
+            simulationPanel.requestFocusInWindow();
         });
 
         rewindButton.addActionListener(e -> {
             if (engine.isPaused()) engine.rewind();
+            simulationPanel.requestFocusInWindow();
+        });
+
+        forwardButton.addActionListener(e -> {
+            if (engine.isPaused()) engine.forward();
+            simulationPanel.requestFocusInWindow();
+        });
+
+        menuButton.addActionListener(e -> {
+            activeSimulationThread.stopSimulation();
+            activeSimulationThread = null;
+            if (statsLoggerRef[0] != null) statsLoggerRef[0].close();
+            if (collisionLoggerRef[0] != null) collisionLoggerRef[0].close();
+            container.remove(activeSimulationWrapper);
+            container.remove(activeDrawingPanel);
+            mainMenuFrame.setTitle("Manhattan");
+            cardLayout.show(container, "MENU");
+            container.revalidate();
+            container.repaint();
+        });
+
+        resetButton.addActionListener(e -> {
+            engine.restore(initialState); // przywracamy stan sprzed pierwszego neutronu
+            engine.unpause(); // upewniamy się, że symulacja nie stoi w pauzie
+            pauseButton.setText("Pauza [Spacja]");
+            rewindButton.setEnabled(false);
+            forwardButton.setEnabled(false);
+            simulationPanel.requestFocusInWindow();
         });
 
         JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 6));
         controlPanel.setBackground(Color.DARK_GRAY);
+        controlPanel.add(menuButton);
         controlPanel.add(pauseButton);
+        controlPanel.add(resetButton);
         controlPanel.add(rewindButton);
+        controlPanel.add(forwardButton);
         controlPanel.add(fpsLabel);
 
-        JPanel simulationWrapper = new JPanel(new BorderLayout());
-        simulationWrapper.add(simulationPanel, BorderLayout.CENTER);
-        simulationWrapper.add(controlPanel, BorderLayout.SOUTH);
+        activeSimulationWrapper = new JPanel(new BorderLayout());
+        activeSimulationWrapper.add(simulationPanel, BorderLayout.CENTER);
+        activeSimulationWrapper.add(controlPanel, BorderLayout.SOUTH);
 
-        container.add(simulationWrapper, "SIMULATION");
+        container.add(activeSimulationWrapper, "SIMULATION");
         cardLayout.show(container, "SIMULATION");
 
         // Key bindings - spacja i strzałka w lewo wołają dokładnie te same akcje co przyciski.
@@ -230,11 +386,39 @@ public class MainMenu { // klasa głównego menu aplikacji
             }
         });
 
+
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0), "rewind");
         actionMap.put("rewind", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (engine.isPaused()) rewindButton.doClick();
+            }
+        });
+
+
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0), "forward");
+        actionMap.put("forward", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (engine.isPaused()) forwardButton.doClick();
+            }
+        });
+
+
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_R, 0), "reset");
+        actionMap.put("reset", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                resetButton.doClick();
+            }
+        });
+
+
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_M, 0), "menu");
+        actionMap.put("menu", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                menuButton.doClick();
             }
         });
 
@@ -251,8 +435,11 @@ public class MainMenu { // klasa głównego menu aplikacji
         mainMenuFrame.addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
-                simulationThread.stopSimulation(); // zatrzymujemy wątek przed zamknięciem
-                mainMenuFrame.dispose();
+                activeSimulationThread.stopSimulation(); // zatrzymujemy wątek przed zamknięciem
+                activeSimulationThread = null;
+                if (statsLoggerRef[0] != null) statsLoggerRef[0].close();
+                if (collisionLoggerRef[0] != null) collisionLoggerRef[0].close();
+                System.exit(0);
             }
         });
 
@@ -314,6 +501,10 @@ public class MainMenu { // klasa głównego menu aplikacji
             }
         });
 
+        if (activeSimulationThread != null) {
+            activeSimulationThread.stopSimulation();
+        }
+        activeSimulationThread = simulationThread;
         simulationThread.start(); // startujemy wątek - musi być po show() żeby panel był już widoczny
     }
 }

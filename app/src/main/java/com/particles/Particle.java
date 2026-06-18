@@ -14,7 +14,8 @@ public abstract class Particle {
 
     public abstract void drawSelf(Graphics2D g2d);
 
-    public abstract void update(int width, int height);
+    public abstract void update(int width, int height, double deltaTime);
+
     // Każda cząstka musi umieć stworzyć swoją niezależną kopię.
     // Dzięki temu Pamiątka kopiuje cząstki polimorficznie - woła p.copy()
     // i nie musi wiedzieć, czy ma do czynienia z neutronem, czy fragmentem

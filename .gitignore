@@ -2,6 +2,8 @@
 **/build/
 !**/src/**/build/
 
+settings.properties
+
 .idea/
 .DS_Store
 
@@ -28,3 +30,8 @@ build
 
 # Ignore Kotlin plugin data
 .kotlin
+
+# Ignore generated data files
+*.csv
+*.png
+*.gif
