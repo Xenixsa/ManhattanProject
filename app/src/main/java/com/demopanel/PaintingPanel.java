@@ -39,7 +39,7 @@ public class PaintingPanel extends JPanel {
             java.io.File dir = new java.io.File(saved);
             if (dir.exists() && dir.isDirectory()) return dir;
         }
-        return new java.io.File(System.getProperty("user.dir")); // katalog domowy użytkownika
+        return new java.io.File(System.getProperty("user.dir"), "grids"); // katalog domowy użytkownika
     }
 
     boolean paintMode = false;

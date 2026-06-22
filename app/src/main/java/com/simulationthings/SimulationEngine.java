@@ -16,7 +16,7 @@ public class SimulationEngine {
     private int aimStartX, aimStartY;
     private int aimCurrentX, aimCurrentY;
 
-    private int neutronLimit = 10000000;
+    private int neutronLimit = 1000000;
     private int width;
     private int height;
     private int[] grid;
@@ -144,8 +144,8 @@ public class SimulationEngine {
                     }
                     int index = py * width + px;
                     if (grid[index] == 1) {
-
-                        int blastRadius = 3;
+//BLAST RADIUS
+                        int blastRadius = 7;
                         for (int by = -blastRadius; by <= blastRadius; by++) {
                             for (int bx = -blastRadius; bx <= blastRadius; bx++) {
                                 int cx = n.getPixelX() + bx;
